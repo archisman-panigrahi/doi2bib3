@@ -1,4 +1,4 @@
-This small set of scripts fetches BibTeX for a DOI (or resolves PMID/arXiv id to DOI) and can save or email the resulting .bib file.
+This small set of scripts fetches BibTeX for a DOI (or resolves arXiv id to DOI) and can save or email the resulting .bib file.
 
 Requirements
 ------------
@@ -18,9 +18,7 @@ Fetch by DOI and save to file:
 
 python cli.py fetch --doi 10.1038/nphys1170 --out paper.bib
 
-Resolve a PMID and save:
-
-python cli.py pmid --pmid 12345678 --out paper.bib
+# PubMed/PMID functionality has been removed from this project.
 
 Resolve an arXiv id and save:
 

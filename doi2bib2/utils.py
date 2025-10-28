@@ -103,18 +103,18 @@ def cli_main(argv=None):
     """A thin CLI wrapper to mirror the old main.py behavior."""
     import argparse
     import sys
-    from .backend import get_bibtex_from_doi, pmid_to_doi, arxiv_to_doi
+    from .backend import get_bibtex_from_doi, arxiv_to_doi
 
-    p = argparse.ArgumentParser(description='Fetch BibTeX by DOI/PMID/arXiv')
+    p = argparse.ArgumentParser(description='Fetch BibTeX by DOI/arXiv')
     sub = p.add_subparsers(dest='cmd')
 
     fetch = sub.add_parser('fetch')
     fetch.add_argument('--doi')
     fetch.add_argument('--out', help='Write .bib file to this path')
 
-    pmid = sub.add_parser('pmid')
-    pmid.add_argument('--pmid')
-    pmid.add_argument('--out')
+    # pmid = sub.add_parser('pmid')
+    # pmid.add_argument('--pmid')
+    # pmid.add_argument('--out')
 
     arxiv = sub.add_parser('arxiv')
     arxiv.add_argument('--id')
@@ -134,21 +134,21 @@ def cli_main(argv=None):
         else:
             print(bib)
 
-    elif args.cmd == 'pmid':
-        if not args.pmid:
-            print('Please provide --pmid', file=sys.stderr)
-            sys.exit(2)
-        doi = pmid_to_doi(args.pmid)
-        if not doi:
-            print('No DOI found for PMID', args.pmid)
-            sys.exit(3)
-        bib = get_bibtex_from_doi(doi)
-        bib = normalize_bibtex(bib)
-        if args.out:
-            save_bibtex_to_file(bib, args.out, append=True)
-            print('Wrote', args.out)
-        else:
-            print(bib)
+    # elif args.cmd == 'pmid':
+    #     if not args.pmid:
+    #         print('Please provide --pmid', file=sys.stderr)
+    #         sys.exit(2)
+    #     doi = pmid_to_doi(args.pmid)
+    #     if not doi:
+    #         print('No DOI found for PMID', args.pmid)
+    #         sys.exit(3)
+    #     bib = get_bibtex_from_doi(doi)
+    #     bib = normalize_bibtex(bib)
+    #     if args.out:
+    #         save_bibtex_to_file(bib, args.out, append=True)
+    #         print('Wrote', args.out)
+    #     else:
+    #         print(bib)
 
     elif args.cmd == 'arxiv':
         if not args.id:
