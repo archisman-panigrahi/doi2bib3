@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doi2bib2"
+version = "0.1.0"
+description = "Fetch BibTeX from DOI, or resolve PMID/arXiv IDs to DOI and fetch BibTeX"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [ {name = "Archisman Panigrahi", email = "apandada1@gmail.com"} ]
+requires-python = ">=3.8"
+keywords = ["doi", "bibtex", "arxiv"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "requests",
+  "bibtexparser",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/archisman-panigrahi/python-doi2bib2"
+
+[project.scripts]
+doi2bib2 = "doi2bib2.utils:cli_main"
+
+[tool.setuptools.packages.find]
+include = ["doi2bib2*"]
