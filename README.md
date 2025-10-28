@@ -1,11 +1,22 @@
 # doi2bib3
 
-Small utility to fetch BibTeX metadata for a DOI or resolve an arXiv id to a DOI
-and fetch the BibTeX entry. This script combines the features of [doi2bib](https://github.com/bibcure/doi2bib/) and [doi2bib2](https://github.com/davidagraf/doi2bib2).
+doi2bib3 is a small Python utility to fetch BibTeX metadata for a DOI or to
+resolve arXiv identifiers to DOIs and fetch their BibTeX entries. It accepts
+DOI inputs, DOI URLs, arXiv IDs/URLs (modern and legacy), publisher landing
+pages, and uses a sequence of resolution strategies to return a BibTeX string.
 
-## Installation
+Key behaviors
+- Automatically detects arXiv inputs (e.g. `2411.08091`, `arXiv:2411.08091`, or `https://arxiv.org/abs/2411.08091`) and queries the arXiv API for a DOI.
+- If arXiv metadata has no DOI, the resolver will try the Crossref/DataCite-style DOI `10.48550/arXiv.<id>` before failing.
+- For non-arXiv inputs: attempts DOI normalization, content negotiation at doi.org, Crossref transform, and as a last resort a Crossref bibliographic search.
 
-Create a virtual environment and install dependencies:
+Supported Python versions
+- Tested with Python 3.8+. Use a virtual environment for installation.
+
+Installation
+------------
+
+Create a virtual environment and install runtime dependencies:
 
 ```bash
 python -m venv .venv
@@ -13,97 +24,71 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-You can also build and install the wheel locally:
+Install the package for local development:
+
+```bash
+pip install -e .
+```
+
+Or build and install the wheel:
 
 ```bash
 python -m build
 pip install dist/doi2bib3-0.1.0-py3-none-any.whl
 ```
 
-## Usage
+CLI usage
+---------
 
-The CLI accepts a single positional identifier: a DOI, a DOI URL, an arXiv
-identifier or arXiv URL, or a publisher landing page URL. The resolver will
-automatically detect arXiv inputs and use the arXiv API, or fall back to DOI
-normalization and Crossref lookups when needed.
+The CLI accepts a single positional identifier and an optional `-o/--out`
+path to save the BibTeX output. When installed, the package installs a console
+script named `doi2bib3` (configured in `pyproject.toml`). From the repository
+root you can also run the provided `main.py` shim.
 
-Examples:
+```bash
+# using the local shim
+python main.py <identifier> [-o OUT]
 
-Fetch by DOI (bare DOI or DOI URL accepted):
+# or when installed as console script
+doi2bib3 <identifier> [-o OUT]
+```
+
+Examples
+--------
+
+Fetch by DOI (bare DOI or DOI URL):
 
 ```bash
 python main.py 10.1038/nphys1170
 python main.py https://doi.org/10.1038/nphys1170
 ```
 
-Save to a file with `-o` / `--out`:
-
-```bash
-python main.py https://doi.org/10.1038/nphys1170 -o paper.bib
-```
-
-ArXiv inputs (URL or id) are detected automatically and resolved via the
-arXiv API to a DOI (when available):
+ArXiv inputs (detected automatically):
 
 ```bash
 python main.py https://arxiv.org/abs/2411.08091
 python main.py arXiv:2411.08091
 python main.py 2411.08091
 python main.py hep-th/9901001
-python main.py https://arxiv.org/abs/hep-th/9901001
 ```
 
-Publisher landing pages or other free-form queries are handled by a Crossref
-search fallback which attempts to find the most likely DOI and then fetch
-BibTeX. This reduces failures when users paste a journal article page instead
-of the DOI itself.
-
-## Using from Python
-
-You can use this library directly from another Python package or script. Below are recommended ways to install and example code showing the public functions to call.
-
-Installation options before importing:
-
-- Install in editable mode while developing inside the repo:
+Save to a file:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+python main.py https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
 
-- Or install the built wheel:
+Programmatic usage
+------------------
 
-```bash
-python -m build
-pip install dist/doi2bib3-0.1.0-py3-none-any.whl
-```
-
-Import paths and useful functions
--- doi2bib3.backend.get_bibtex_from_doi(doi: str) -> str
-	- Fetches BibTeX text for a DOI. Raises `doi2bib3.backend.DOIError` on non-200 responses or invalid DOIs.
-
--- doi2bib3.backend.arxiv_to_doi(arxivid: str) -> Optional[str]
-	- Resolves an arXiv id to a DOI string or returns None if not found.
-
--- doi2bib3.utils.normalize_bibtex(bib_str: str) -> str
-	- Normalizes a BibTeX string (ID cleanup, page formatting, URL decoding, small character fixes).
-
--- doi2bib3.utils.save_bibtex_to_file(bib_str: str, path: str, append: bool=False) -> None
-	- Writes or appends the BibTeX string to a file.
-
-Example usage (save as `fetch_example.py`):
+You can call the resolver from Python. The primary API functions are in
+`doi2bib3.backend` and helper utilities are in `doi2bib3.utils`.
 
 ```python
 from doi2bib3.backend import get_bibtex_from_doi, arxiv_to_doi, DOIError
 from doi2bib3.utils import normalize_bibtex, save_bibtex_to_file
 
-def fetch_by_doi_or_arxiv(identifier: str, out_path: str | None = None) -> str:
-	"""Accepts DOI, DOI URL, arXiv id/URL, or publisher URL and returns BibTeX.
-
-	This function delegates to `get_bibtex_from_doi`, which handles arXiv
-	detection and Crossref fallback automatically.
-	"""
+def fetch_by_identifier(identifier: str, out_path: str | None = None) -> str:
 	try:
 		raw = get_bibtex_from_doi(identifier)
 	except DOIError as exc:
@@ -115,18 +100,14 @@ def fetch_by_doi_or_arxiv(identifier: str, out_path: str | None = None) -> str:
 	return cleaned
 
 if __name__ == '__main__':
-		print(fetch_by_doi('10.1038/nphys1170'))
-		# Or:
-		# print(fetch_by_arxiv('2411.08091', out_path='paper.bib'))
+	print(fetch_by_identifier('10.1038/nphys1170'))
 ```
 
-Programmatic CLI call
-
-You can also call the CLI function directly (it accepts an argv list):
+You can also call the CLI function directly (useful for tests):
 
 ```python
-from doi2bib3.utils import cli_doi2bib3
-cli_doi2bib3(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
+from doi2bib3.utils import cli_doi2bib2
+cli_doi2bib2(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
 ```
 
 License
