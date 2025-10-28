@@ -85,24 +85,24 @@ def get_bibtex_from_doi(doi: str, timeout: int = 15) -> str:
         raise DOIError(f"Failed to fetch DOI {doi}: HTTP {resp.status_code}")
 
 
-def pmid_to_doi(pmid: str, timeout: int = 15) -> Optional[str]:
-    """Resolve a PubMed PMID (or PMC id) to DOI using NCBI idconv service.
+# def pmid_to_doi(pmid: str, timeout: int = 15) -> Optional[str]:
+#     """Resolve a PubMed PMID (or PMC id) to DOI using NCBI idconv service.
 
-    Returns DOI string or None if not found.
-    """
-    pmid = pmid.strip()
-    if not re.match(r"^\d+$|^PMC\d+(\.\d+)?$", pmid):
-        raise ValueError("Invalid PMID")
+#     Returns DOI string or None if not found.
+#     """
+#     pmid = pmid.strip()
+#     if not re.match(r"^\d+$|^PMC\d+(\.\d+)?$", pmid):
+#         raise ValueError("Invalid PMID")
 
-    url = f'http://www.pubmedcentral.nih.gov/utils/idconv/v1.0/?format=json&ids={pmid}'
-    resp = requests.get(url, timeout=timeout)
-    if resp.status_code != 200:
-        raise DOIError(f"PubMed ID conversion failed: HTTP {resp.status_code}")
-    data = resp.json()
-    records = data.get('records')
-    if not records or not records[0]:
-        return None
-    return records[0].get('doi')
+#     url = f'http://www.pubmedcentral.nih.gov/utils/idconv/v1.0/?format=json&ids={pmid}'
+#     resp = requests.get(url, timeout=timeout)
+#     if resp.status_code != 200:
+#         raise DOIError(f"PubMed ID conversion failed: HTTP {resp.status_code}")
+#     data = resp.json()
+#     records = data.get('records')
+#     if not records or not records[0]:
+#         return None
+#     return records[0].get('doi')
 
 
 def arxiv_to_doi(arxivid: str, timeout: int = 15) -> Optional[str]:
