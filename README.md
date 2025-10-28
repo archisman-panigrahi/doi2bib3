@@ -113,3 +113,7 @@ cli_doi2bib2(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
 License
 -------
 This project is distributed under the GNU General Public License v3 (GPL-3.0-only).
+
+Acknowledgements
+---------------
+Parts of the code and documentation were assisted by copilot.
