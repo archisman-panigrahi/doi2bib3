@@ -28,13 +28,6 @@ Install the package for local development:
 pip install -e .
 ```
 
-Or build and install the wheel:
-
-```bash
-python -m build
-pip install dist/doi2bib3-0.1.0-py3-none-any.whl
-```
-
 <a href="https://repology.org/project/doi2bib3/versions">
     <img src="https://repology.org/badge/vertical-allrepos/doi2bib3.svg" alt="Packaging status" align="right">
 </a>
