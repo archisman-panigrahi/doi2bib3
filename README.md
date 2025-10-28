@@ -67,24 +67,26 @@ Examples
 Fetch by DOI (bare DOI or DOI URL):
 
 ```bash
-python main.py 10.1038/nphys1170
-python main.py https://doi.org/10.1038/nphys1170
+doi2bib3 10.1038/nphys1170
+doi2bib3 https://doi.org/10.1038/nphys1170
 ```
 
 ArXiv inputs (detected automatically):
 
 ```bash
-python main.py https://arxiv.org/abs/2411.08091
-python main.py arXiv:2411.08091
-python main.py 2411.08091
-python main.py hep-th/9901001
+doi2bib3 https://arxiv.org/abs/2411.08091
+doi2bib3 arXiv:2411.08091
+doi2bib3 2411.08091
+doi2bib3 hep-th/9901001
 ```
 
 Save to a file:
 
 ```bash
-python main.py https://doi.org/10.1038/nphys1170 -o paper.bib
+doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
+
+Note: If the tool is not installed, you can run it with `python main.py https://doi.org/10.1038/nphys1170` and so on.
 
 Programmatic usage
 ------------------
