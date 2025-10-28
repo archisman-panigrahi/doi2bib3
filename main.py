@@ -19,7 +19,6 @@ import sys
 from doi2bib2.utils import cli_doi2bib2
 
 
-# Backwards-compatible CLI shim: delegate to package implementation
 def main():
     import sys
     cli_doi2bib2(sys.argv[1:])
