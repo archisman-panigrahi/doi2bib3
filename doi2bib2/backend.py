@@ -13,15 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Backend functions for doi2bib2 package.
-
-This file is a copy of the top-level `doi2bib2_backend.py` but placed inside the
-package so packaging and imports are clean. Keep function names identical.
-"""
 from typing import Optional
 import re
 import requests
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 
 DOI_REGEX = re.compile(r"^10\..+/.+$")
 
@@ -44,17 +39,102 @@ class DOIError(Exception):
 
 
 def get_bibtex_from_doi(doi: str, timeout: int = 15) -> str:
-    doi = normalize_doi(doi)
+    # First, detect if the input is an arXiv id or arXiv URL. If so,
+    # resolve it using the arXiv API (arxiv_to_doi) and continue with the
+    # DOI fetch flow. This ensures arXiv links (abs/pdf/html) don't get
+    # mis-resolved by Crossref.
+    arxiv_id = _extract_arxiv_id(doi)
+    if arxiv_id:
+        found_doi = arxiv_to_doi(arxiv_id, timeout=timeout)
+        if not found_doi:
+            # Many arXiv entries (especially unpublished ones) are indexed in
+            # Crossref/DataCite with a DOI of the form 10.48550/arXiv.<id>
+            # (without version). Try that pattern before giving up.
+            arxiv_core = re.sub(r'v\d+$', '', arxiv_id)
+            candidate = f'10.48550/arXiv.{arxiv_core}'
+            try:
+                # normalize to ensure it's a valid DOI string
+                candidate = normalize_doi(candidate)
+                doi = candidate
+            except DOIError:
+                raise DOIError(f"No DOI found for arXiv id: {arxiv_id}")
+        else:
+            doi = found_doi
+    else:
+        # Try to normalize input to a DOI; if that fails, fall back to
+        # Crossref search which can accept publisher URLs or free-form queries.
+        try:
+            doi = normalize_doi(doi)
+        except DOIError:
+            found = crossref_search_for_doi(doi, timeout=timeout)
+            if not found:
+                raise DOIError(f"Invalid DOI and Crossref lookup failed for: {doi}")
+            doi = found
+
     headers = {
         'Accept': 'application/x-bibtex; charset=utf-8',
         'User-Agent': 'doi2bib-python/1.0'
     }
+    # try doi.org first
     url = f'https://doi.org/{doi}'
     resp = requests.get(url, headers=headers, timeout=timeout)
     if resp.status_code == 200:
         return resp.text
-    else:
-        raise DOIError(f"Failed to fetch DOI {doi}: HTTP {resp.status_code}")
+
+    # fallback to Crossref transform endpoint
+    doi_quoted = quote(doi, safe='')
+    xurl = f'https://api.crossref.org/works/{doi_quoted}/transform/application/x-bibtex'
+    resp2 = requests.get(xurl, headers=headers, timeout=timeout)
+    if resp2.status_code == 200:
+        return resp2.text
+
+    raise DOIError(f"Failed to fetch DOI {doi}: doi.org HTTP {resp.status_code}, crossref HTTP {resp2.status_code}")
+
+
+def _extract_arxiv_id(s: str) -> Optional[str]:
+    """Return an arXiv id if `s` is an arXiv URL or id, else None.
+
+    Accepts forms like:
+    - https://arxiv.org/abs/2411.08091
+    - https://arxiv.org/pdf/2411.08091.pdf
+    - https://arxiv.org/html/2411.08091
+    - arXiv:2411.08091
+    - 2411.08091
+    Also handles older IDs like hep-th/9901001.
+    """
+    if not s:
+        return None
+    t = s.strip()
+    # arXiv: prefix
+    if t.lower().startswith('arxiv:'):
+        return t.split(':', 1)[1].strip()
+
+    # URL forms
+    if t.lower().startswith('http://') or t.lower().startswith('https://'):
+        try:
+            parsed = urlparse(t)
+            net = parsed.netloc.lower()
+            if 'arxiv.org' in net:
+                path = parsed.path.lstrip('/')
+                # match abs/, pdf/, html/ etc.
+                m = re.match(r'^(?:abs|pdf|html)/(?P<id>.+)$', path)
+                if m:
+                    aid = m.group('id')
+                    # strip .pdf extension when present
+                    aid = re.sub(r'\.pdf$', '', aid, flags=re.I)
+                    return aid
+        except Exception:
+            return None
+
+    # bare modern arXiv id: YYYY.NNNNN or with vN
+    if re.match(r'^\d{4}\.\d+(v\d+)?$', t):
+        return t
+
+    # legacy arXiv id like hep-th/9901001
+    if re.match(r'^[a-z\-]+/\d{7}$', t, flags=re.I):
+        return t
+
+    return None
 
 
 # pmid_to_doi is disabled — PubMed/PMID support commented out per project config
@@ -79,7 +159,9 @@ def arxiv_to_doi(arxivid: str, timeout: int = 15) -> Optional[str]:
     if arxivid.lower().startswith('arxiv:'):
         arxivid = arxivid.split(':', 1)[1].strip()
 
-    if not re.match(r"^\d+\.\d+(v(\d+))?$", arxivid):
+    # Accept modern arXiv IDs (YYYY.NNNNN with optional vN) and legacy
+    # subject-class IDs like hep-th/9901001 (optionally with vN).
+    if not re.match(r"^(?:\d{4}\.\d+(v\d+)?|[A-Za-z\-]+/\d{7}(v\d+)?)$", arxivid):
         raise ValueError("Invalid arXiv ID")
 
     url = f'https://export.arxiv.org/api/query?id_list={arxivid}'
@@ -97,3 +179,59 @@ def arxiv_to_doi(arxivid: str, timeout: int = 15) -> Optional[str]:
     if m:
         return unquote(m.group(1).strip())
     return None
+
+
+def crossref_search_for_doi(query: str, timeout: int = 15) -> Optional[str]:
+    q = query.strip()
+    if not q:
+        return None
+
+    headers = {
+        'User-Agent': 'doi2bib-python/1.0'
+    }
+
+    # If the query is a URL, try to extract a DOI-like substring from the path
+    if q.lower().startswith('http://') or q.lower().startswith('https://'):
+        try:
+            parsed = urlparse(q)
+            path = unquote(parsed.path or '')
+            m = re.search(r"10\.\d{4,9}/[^\s'\"<>]+", path)
+            if m:
+                candidate = m.group(0)
+                try:
+                    return normalize_doi(candidate)
+                except DOIError:
+                    pass
+        except Exception:
+            pass
+
+    # Ask Crossref for a handful of candidates and pick the best match.
+    try:
+        url = f'https://api.crossref.org/works?query.bibliographic={quote(q)}&rows=5'
+        resp = requests.get(url, headers=headers, timeout=timeout)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        items = data.get('message', {}).get('items', [])
+        if not items:
+            return None
+
+        # If query was a URL, prefer items whose URL contains the same netloc
+        if q.lower().startswith('http://') or q.lower().startswith('https://'):
+            try:
+                parsed_q = urlparse(q)
+                q_netloc = parsed_q.netloc.lower()
+                for it in items:
+                    it_url = (it.get('URL') or '')
+                    if it_url and q_netloc in it_url.lower():
+                        if it.get('DOI'):
+                            return it.get('DOI')
+            except Exception:
+                pass
+
+        # Fallback: choose highest score returned by Crossref
+        items_sorted = sorted(items, key=lambda x: x.get('score', 0), reverse=True)
+        top = items_sorted[0]
+        return top.get('DOI')
+    except Exception:
+        return None

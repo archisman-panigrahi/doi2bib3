@@ -22,33 +22,41 @@ pip install dist/doi2bib2-0.1.0-py3-none-any.whl
 
 ## Usage
 
-Two simple commands are provided. The CLI executable is the `main.py` shim in the
-repository root; if you install the package the console script `doi2bib2` will be
-available and behaves the same.
+The CLI accepts a single positional identifier: a DOI, a DOI URL, an arXiv
+identifier or arXiv URL, or a publisher landing page URL. The resolver will
+automatically detect arXiv inputs and use the arXiv API, or fall back to DOI
+normalization and Crossref lookups when needed.
 
-- Fetch by DOI:
+Examples:
+
+Fetch by DOI (bare DOI or DOI URL accepted):
 
 ```bash
-python main.py doi 10.1038/nphys1170
+python main.py 10.1038/nphys1170
+python main.py https://doi.org/10.1038/nphys1170
 ```
 
 Save to a file with `-o` / `--out`:
 
 ```bash
-python main.py doi 10.1038/nphys1170 -o paper.bib
+python main.py https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
 
-- Resolve an arXiv id and fetch the DOI's BibTeX:
+ArXiv inputs (URL or id) are detected automatically and resolved via the
+arXiv API to a DOI (when available):
 
 ```bash
-python main.py arxiv 2411.08091
+python main.py https://arxiv.org/abs/2411.08091
+python main.py arXiv:2411.08091
+python main.py 2411.08091
+python main.py hep-th/9901001
+python main.py https://arxiv.org/abs/hep-th/9901001
 ```
 
-Save to a file:
-
-```bash
-python main.py arxiv 2411.08091 -o paper.bib
-```
+Publisher landing pages or other free-form queries are handled by a Crossref
+search fallback which attempts to find the most likely DOI and then fetch
+BibTeX. This reduces failures when users paste a journal article page instead
+of the DOI itself.
 
 ## Using from Python
 
@@ -90,22 +98,21 @@ Example usage (save as `fetch_example.py`):
 from doi2bib2.backend import get_bibtex_from_doi, arxiv_to_doi, DOIError
 from doi2bib2.utils import normalize_bibtex, save_bibtex_to_file
 
-def fetch_by_doi(doi: str, out_path: str | None = None) -> str:
-		try:
-				raw = get_bibtex_from_doi(doi)
-		except DOIError as exc:
-				raise RuntimeError(f"Failed to fetch DOI {doi}: {exc}") from exc
-		cleaned = normalize_bibtex(raw)
-		if out_path:
-				save_bibtex_to_file(cleaned, out_path, append=True)
-				return f"Wrote {out_path}"
-		return cleaned
+def fetch_by_doi_or_arxiv(identifier: str, out_path: str | None = None) -> str:
+	"""Accepts DOI, DOI URL, arXiv id/URL, or publisher URL and returns BibTeX.
 
-def fetch_by_arxiv(arxivid: str, out_path: str | None = None) -> str:
-		doi = arxiv_to_doi(arxivid)
-		if not doi:
-				raise RuntimeError(f"No DOI found for arXiv id {arxivid}")
-		return fetch_by_doi(doi, out_path)
+	This function delegates to `get_bibtex_from_doi`, which handles arXiv
+	detection and Crossref fallback automatically.
+	"""
+	try:
+		raw = get_bibtex_from_doi(identifier)
+	except DOIError as exc:
+		raise RuntimeError(f"Failed to resolve {identifier}: {exc}") from exc
+	cleaned = normalize_bibtex(raw)
+	if out_path:
+		save_bibtex_to_file(cleaned, out_path, append=True)
+		return f"Wrote {out_path}"
+	return cleaned
 
 if __name__ == '__main__':
 		print(fetch_by_doi('10.1038/nphys1170'))
@@ -114,11 +121,12 @@ if __name__ == '__main__':
 ```
 
 Programmatic CLI call
-- You can also call the CLI function directly (it accepts argv list):
+
+You can also call the CLI function directly (it accepts an argv list):
 
 ```python
 from doi2bib2.utils import cli_doi2bib2
-cli_doi2bib2(['doi', '10.1038/nphys1170', '--out', 'paper.bib'])
+cli_doi2bib2(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
 ```
 
 License

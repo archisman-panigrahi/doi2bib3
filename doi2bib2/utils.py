@@ -107,75 +107,35 @@ def cli_doi2bib2(argv=None):
     """
     import argparse
     import sys
-    from .backend import get_bibtex_from_doi, arxiv_to_doi
+    from .backend import get_bibtex_from_doi
 
-    p = argparse.ArgumentParser(description='Fetch BibTeX by DOI or arXiv id')
-    sub = p.add_subparsers(dest='cmd')
-
-    # simple explicit command: `doi <DOI>`
-    doi_cmd = sub.add_parser('doi', help='Fetch BibTeX by DOI')
-    doi_cmd.add_argument('doi', help='DOI string (e.g. 10.1038/nphys1170)')
-    doi_cmd.add_argument('-o', '--out', help='Write .bib file to this path')
-
-    # simple arXiv command: `arxiv <arXiv-id>`
-    arxiv_cmd = sub.add_parser('arxiv', help='Resolve arXiv id to DOI and fetch BibTeX')
-    arxiv_cmd.add_argument('id', help='arXiv id (e.g. 2411.08091)')
-    arxiv_cmd.add_argument('-o', '--out', help='Write .bib file to this path')
+    p = argparse.ArgumentParser(
+        description='Fetch BibTeX by DOI, DOI URL, arXiv id or arXiv URL'
+    )
+    p.add_argument('identifier', nargs='?', help='DOI, DOI URL, arXiv id/URL, or publisher URL')
+    p.add_argument('-o', '--out', help='Write .bib file to this path')
 
     args = p.parse_args(argv)
 
-    if args.cmd == 'doi':
-        doi_value = args.doi
-        out = args.out
-
-        if not doi_value:
-            print('Please provide a DOI (usage: doi <DOI>)', file=sys.stderr)
-            sys.exit(2)
-        bib = get_bibtex_from_doi(doi_value)
-        bib = normalize_bibtex(bib)
-        if out:
-            save_bibtex_to_file(bib, out, append=True)
-            print('Wrote', out)
-        else:
-            print(bib)
-
-    # elif args.cmd == 'pmid':
-    #     if not args.pmid:
-    #         print('Please provide --pmid', file=sys.stderr)
-    #         sys.exit(2)
-    #     doi = pmid_to_doi(args.pmid)
-    #     if not doi:
-    #         print('No DOI found for PMID', args.pmid)
-    #         sys.exit(3)
-    #     bib = get_bibtex_from_doi(doi)
-    #     bib = normalize_bibtex(bib)
-    #     if args.out:
-    #         save_bibtex_to_file(bib, args.out, append=True)
-    #         print('Wrote', args.out)
-    #     else:
-    #         print(bib)
-
-    elif args.cmd == 'arxiv':
-        arxv = args.id
-        out = args.out
-
-        if not arxv:
-            print('Please provide arXiv id (usage: arxiv <id>)', file=sys.stderr)
-            sys.exit(2)
-        doi = arxiv_to_doi(arxv)
-        if not doi:
-            print('No DOI found for arXiv id', arxv)
-            sys.exit(3)
-        bib = get_bibtex_from_doi(doi)
-        bib = normalize_bibtex(bib)
-        if out:
-            save_bibtex_to_file(bib, out, append=True)
-            print('Wrote', out)
-        else:
-            print(bib)
-
-    else:
+    if not args.identifier:
         p.print_help()
+        sys.exit(2)
+
+    ident = args.identifier
+    out = args.out
+
+    try:
+        bib = get_bibtex_from_doi(ident)
+    except Exception as e:
+        print('Error:', e, file=sys.stderr)
+        sys.exit(1)
+
+    bib = normalize_bibtex(bib)
+    if out:
+        save_bibtex_to_file(bib, out, append=True)
+        print('Wrote', out)
+    else:
+        print(bib)
 
 
 if __name__ == '__main__':
