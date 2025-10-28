@@ -40,7 +40,7 @@ pip install dist/doi2bib3-0.1.0-py3-none-any.whl
 </a>
 
 ### Arch Linux
-In Arch Linux you can install it from the AUR with the command `yay -S doi2bib3-git`. 
+In Arch Linux you can install it from the AUR with the command `yay -S doi2bib3`. 
 
 CLI usage
 ---------
