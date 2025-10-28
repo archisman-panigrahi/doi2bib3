@@ -1,7 +1,7 @@
-# doi2bib2
+# doi2bib3
 
 Small utility to fetch BibTeX metadata for a DOI or resolve an arXiv id to a DOI
-and fetch the BibTeX entry.
+and fetch the BibTeX entry. This script combines the features of [doi2bib](https://github.com/bibcure/doi2bib/) and [doi2bib2](https://github.com/davidagraf/doi2bib2).
 
 ## Installation
 
@@ -17,7 +17,7 @@ You can also build and install the wheel locally:
 
 ```bash
 python -m build
-pip install dist/doi2bib2-0.1.0-py3-none-any.whl
+pip install dist/doi2bib3-0.1.0-py3-none-any.whl
 ```
 
 ## Usage
@@ -76,27 +76,27 @@ pip install -e .
 
 ```bash
 python -m build
-pip install dist/doi2bib2-0.1.0-py3-none-any.whl
+pip install dist/doi2bib3-0.1.0-py3-none-any.whl
 ```
 
 Import paths and useful functions
-- doi2bib2.backend.get_bibtex_from_doi(doi: str) -> str
-	- Fetches BibTeX text for a DOI. Raises `doi2bib2.backend.DOIError` on non-200 responses or invalid DOIs.
+-- doi2bib3.backend.get_bibtex_from_doi(doi: str) -> str
+	- Fetches BibTeX text for a DOI. Raises `doi2bib3.backend.DOIError` on non-200 responses or invalid DOIs.
 
-- doi2bib2.backend.arxiv_to_doi(arxivid: str) -> Optional[str]
+-- doi2bib3.backend.arxiv_to_doi(arxivid: str) -> Optional[str]
 	- Resolves an arXiv id to a DOI string or returns None if not found.
 
-- doi2bib2.utils.normalize_bibtex(bib_str: str) -> str
+-- doi2bib3.utils.normalize_bibtex(bib_str: str) -> str
 	- Normalizes a BibTeX string (ID cleanup, page formatting, URL decoding, small character fixes).
 
-- doi2bib2.utils.save_bibtex_to_file(bib_str: str, path: str, append: bool=False) -> None
+-- doi2bib3.utils.save_bibtex_to_file(bib_str: str, path: str, append: bool=False) -> None
 	- Writes or appends the BibTeX string to a file.
 
 Example usage (save as `fetch_example.py`):
 
 ```python
-from doi2bib2.backend import get_bibtex_from_doi, arxiv_to_doi, DOIError
-from doi2bib2.utils import normalize_bibtex, save_bibtex_to_file
+from doi2bib3.backend import get_bibtex_from_doi, arxiv_to_doi, DOIError
+from doi2bib3.utils import normalize_bibtex, save_bibtex_to_file
 
 def fetch_by_doi_or_arxiv(identifier: str, out_path: str | None = None) -> str:
 	"""Accepts DOI, DOI URL, arXiv id/URL, or publisher URL and returns BibTeX.
@@ -125,8 +125,8 @@ Programmatic CLI call
 You can also call the CLI function directly (it accepts an argv list):
 
 ```python
-from doi2bib2.utils import cli_doi2bib2
-cli_doi2bib2(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
+from doi2bib3.utils import cli_doi2bib3
+cli_doi2bib3(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
 ```
 
 License

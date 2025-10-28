@@ -36,11 +36,11 @@ SPECIAL_CHARS = {
 }
 
 
-VAR_RE = re.compile(r"(\{)(\\var[A-Z]?[a-z]*)(\})")
+VAR_RE = re.compile(r"(\\{)(\\var[A-Z]?[a-z]*)(\\})")
 
 
 def insert_dollars(title: str) -> str:
-    return VAR_RE.sub(r"\1$\2$\3", title)
+    return VAR_RE.sub(r"\\1$\\2$\\3", title)
 
 
 def encode_special_chars(value: str) -> str:
@@ -99,7 +99,7 @@ def save_bibtex_to_file(bib_str: str, path: str, append: bool = False) -> None:
         f.write(bib_str)
 
 
-def cli_doi2bib2(argv=None):
+def cli_doi2bib3(argv=None):
     """A thin CLI wrapper to mirror the main.py behavior (entry point).
 
     This function is intended to be callable programmatically with an argv
@@ -139,4 +139,4 @@ def cli_doi2bib2(argv=None):
 
 
 if __name__ == '__main__':
-    cli_doi2bib2()
+    cli_doi2bib3()

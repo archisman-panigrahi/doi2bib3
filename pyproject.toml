@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "doi2bib2"
+name = "doi2bib3"
 version = "0.1.0"
 description = "Fetch BibTeX from DOI, or resolve arXiv IDs to DOI and fetch BibTeX"
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -23,10 +23,10 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/archisman-panigrahi/python-doi2bib2"
+"Homepage" = "https://github.com/archisman-panigrahi/python-doi2bib3"
 
 [project.scripts]
-doi2bib2 = "doi2bib2.utils:cli_doi2bib2"
+doi2bib3 = "doi2bib3.utils:cli_doi2bib3"
 
 [tool.setuptools.packages.find]
-include = ["doi2bib2*"]
+include = ["doi2bib3*"]
