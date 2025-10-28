@@ -26,7 +26,7 @@ dependencies = [
 "Homepage" = "https://github.com/archisman-panigrahi/python-doi2bib2"
 
 [project.scripts]
-doi2bib2 = "doi2bib2.utils:cli_main"
+doi2bib2 = "doi2bib2.utils:cli_doi2bib2"
 
 [tool.setuptools.packages.find]
 include = ["doi2bib2*"]

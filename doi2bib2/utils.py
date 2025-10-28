@@ -99,8 +99,12 @@ def save_bibtex_to_file(bib_str: str, path: str, append: bool = False) -> None:
         f.write(bib_str)
 
 
-def cli_main(argv=None):
-    """A thin CLI wrapper to mirror the old main.py behavior."""
+def cli_doi2bib2(argv=None):
+    """A thin CLI wrapper to mirror the main.py behavior (entry point).
+
+    This function is intended to be callable programmatically with an argv
+    list (like sys.argv[1:]) and also used as the console script entry point.
+    """
     import argparse
     import sys
     from .backend import get_bibtex_from_doi, arxiv_to_doi
@@ -175,4 +179,4 @@ def cli_main(argv=None):
 
 
 if __name__ == '__main__':
-    cli_main()
+    cli_doi2bib2()

@@ -16,12 +16,12 @@
 
 import argparse
 import sys
-from doi2bib2.utils import cli_main
+from doi2bib2.utils import cli_doi2bib2
 
 
 # Backwards-compatible CLI shim: delegate to package implementation
 def main():
     import sys
-    cli_main(sys.argv[1:])
+    cli_doi2bib2(sys.argv[1:])
 if __name__ == '__main__':
     main()
