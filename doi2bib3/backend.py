@@ -191,6 +191,9 @@ def crossref_search_for_doi(query: str, timeout: int = 15) -> Optional[str]:
     }
 
     # If the query is a URL, try to extract a DOI-like substring from the path
+    # or from the publisher page HTML (meta tags, canonical/doi links). This
+    # avoids sending the full publisher URL as a free-form Crossref query
+    # which can produce unrelated matches.
     if q.lower().startswith('http://') or q.lower().startswith('https://'):
         try:
             parsed = urlparse(q)
@@ -203,6 +206,15 @@ def crossref_search_for_doi(query: str, timeout: int = 15) -> Optional[str]:
                 except DOIError:
                     pass
         except Exception:
+            pass
+
+        # Try to fetch the publisher page and look for common DOI metadata
+        try:
+            doi_from_page = _extract_doi_from_url(q, timeout=timeout)
+            if doi_from_page:
+                return doi_from_page
+        except Exception:
+            # Don't fail hard on page parsing — fall back to Crossref search
             pass
 
     # Ask Crossref for a handful of candidates and pick the best match.
@@ -235,3 +247,77 @@ def crossref_search_for_doi(query: str, timeout: int = 15) -> Optional[str]:
         return top.get('DOI')
     except Exception:
         return None
+
+
+def _extract_doi_from_url(url: str, timeout: int = 10) -> Optional[str]:
+    """Fetch a publisher URL and try to extract a DOI from common meta tags
+    and links.
+
+    Heuristics checked (in order):
+    - meta[name=citation_doi]
+    - meta[name=dc.Identifier] / meta[name=DC.identifier]
+    - meta[name=DC.identifier] with scheme DOI
+    - link[href] pointing to dx.doi.org or doi.org
+    - any href/src containing /10.xxxx/ pattern
+    Returns a normalized DOI string or None.
+    """
+    try:
+        resp = requests.get(url, headers={'User-Agent': 'doi2bib-python/1.0'}, timeout=timeout)
+        if resp.status_code != 200 or not resp.text:
+            return None
+        html = resp.text
+    except Exception:
+        return None
+
+    # meta tags: citation_doi is common (used by many publishers)
+    m = re.search(r'<meta[^>]+name=["\']citation_doi["\'][^>]*content=["\']([^"\']+)["\']', html, flags=re.I)
+    if m:
+        try:
+            return normalize_doi(m.group(1).strip())
+        except DOIError:
+            pass
+
+    # dc.identifier or DCTERMS.identifier
+    m = re.search(r'<meta[^>]+name=["\'](?:dc\.|DCTERMS\.)?identifier["\'][^>]*content=["\']([^"\']+)["\']', html, flags=re.I)
+    if m:
+        val = m.group(1).strip()
+        # sometimes comes as 'doi:10.xxx' or full URL
+        if val.lower().startswith('doi:'):
+            val = val.split(':', 1)[1]
+        if val.lower().startswith('http://') or val.lower().startswith('https://'):
+            try:
+                parsed = urlparse(val)
+                v = unquote(parsed.path.lstrip('/'))
+                return normalize_doi(v)
+            except Exception:
+                pass
+        try:
+            return normalize_doi(val)
+        except DOIError:
+            pass
+
+    # link tags and explicit DOI hrefs
+    m = re.search(r'href=["\']https?://(?:dx\.)?doi\.org/([^"\']+)["\']', html, flags=re.I)
+    if m:
+        try:
+            return normalize_doi(unquote(m.group(1).strip()))
+        except DOIError:
+            pass
+
+    # Any /10.xxx/ pattern in href/src attributes
+    m = re.search(r'(?:href|src)=["\'][^"\']*(10\.\d{4,9}/[^"\']+)["\']', html, flags=re.I)
+    if m:
+        try:
+            return normalize_doi(m.group(1).strip())
+        except DOIError:
+            pass
+
+    # last resort: any DOI-like substring in the page
+    m = re.search(r'10\.\d{4,9}/[^\s"\'"<>]+', html)
+    if m:
+        try:
+            return normalize_doi(m.group(0))
+        except DOIError:
+            pass
+
+    return None
