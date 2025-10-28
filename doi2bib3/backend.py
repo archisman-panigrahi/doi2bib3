@@ -261,8 +261,21 @@ def _extract_doi_from_url(url: str, timeout: int = 10) -> Optional[str]:
     - any href/src containing /10.xxxx/ pattern
     Returns a normalized DOI string or None.
     """
+    # Try a polite bot UA first; some sites block unknown agents. If we get a
+    # non-200 (commonly 403), retry once with a common browser User-Agent and
+    # a Referer header to improve chances of acceptance.
+    ua_bot = 'doi2bib3-python/1.0'
+    ua_browser = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+    headers = {'User-Agent': ua_bot}
     try:
-        resp = requests.get(url, headers={'User-Agent': 'doi2bib-python/1.0'}, timeout=timeout)
+        resp = requests.get(url, headers=headers, timeout=timeout)
+        if resp.status_code != 200 or not resp.text:
+            # retry with browser UA and Referer
+            try:
+                headers = {'User-Agent': ua_browser, 'Referer': url}
+                resp = requests.get(url, headers=headers, timeout=timeout)
+            except Exception:
+                return None
         if resp.status_code != 200 or not resp.text:
             return None
         html = resp.text
