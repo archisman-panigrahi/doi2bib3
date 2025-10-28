@@ -1,34 +1,55 @@
-This small set of scripts fetches BibTeX for a DOI (or resolves arXiv id to DOI) and can save or email the resulting .bib file.
+# doi2bib2
 
-Requirements
-------------
-Install the Python dependencies (recommended in a venv):
+Small utility to fetch BibTeX metadata for a DOI or resolve an arXiv id to a DOI
+and fetch the BibTeX entry.
 
+## Installation
+
+Create a virtual environment and install dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-Usage
------
-Examples:
+You can also build and install the wheel locally:
 
-Fetch by DOI and print:
+```bash
+python -m build
+pip install dist/doi2bib2-0.1.0-py3-none-any.whl
+```
 
-python cli.py fetch --doi 10.1038/nphys1170
+## Usage
 
-Fetch by DOI and save to file:
+Two simple commands are provided. The CLI executable is the `main.py` shim in the
+repository root; if you install the package the console script `doi2bib2` will be
+available and behaves the same.
 
-python cli.py fetch --doi 10.1038/nphys1170 --out paper.bib
+- Fetch by DOI:
 
-# PubMed/PMID functionality has been removed from this project.
+```bash
+python main.py doi 10.1038/nphys1170
+```
 
-Resolve an arXiv id and save:
+Save to a file with `-o` / `--out`:
 
-python cli.py arxiv --id 1901.00001 --out paper.bib
+```bash
+python main.py doi 10.1038/nphys1170 -o paper.bib
+```
 
-Notes
------
-- The scripts use the same upstream services as the original project:
-  - DOI -> BibTeX via https://doi.org/ (content negotiation)
-  - PMID -> DOI via NCBI idconv service
-  - arXiv -> DOI via the arXiv API
+- Resolve an arXiv id and fetch the DOI's BibTeX:
 
-- The code normalizes a few BibTeX quirks (pages, url decoding, simple special character replacements).
+```bash
+python main.py arxiv 2411.08091
+```
+
+Save to a file:
+
+```bash
+python main.py arxiv 2411.08091 -o paper.bib
+```
+
+License
+-------
+This project is distributed under the GNU General Public License v3 (GPL-3.0-only).
