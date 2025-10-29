@@ -35,6 +35,14 @@ pip install -e .
 ### Arch Linux
 In Arch Linux you can install it from the AUR with the command `yay -S doi2bib3`. 
 
+### Ubuntu
+You can use our PPA
+```
+sudo add-apt-repository ppa:apandada1/quickbib
+sudo apt update
+sudo apt install python3-doi2bib3
+```
+
 CLI usage
 ---------
 
