@@ -1,3 +1,5 @@
 """doi2bib3 package shim."""
 
-__all__ = []
+from .backend import fetch_bibtex
+
+__all__ = ["fetch_bibtex"]

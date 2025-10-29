@@ -81,11 +81,29 @@ Note: If the tool is not installed, you can run it with `python main.py https://
 Programmatic usage
 ------------------
 
-You can call the resolver from Python. The primary API functions are in
-`doi2bib3.backend` and helper utilities are in `doi2bib3.utils`.
+The package exposes a small programmatic API so you can use doi2bib3 from
+Python code. The most convenient entry point is the package-level
+`fetch_bibtex` function which mirrors the CLI behavior and returns normalized
+BibTeX by default:
 
 ```python
-from doi2bib3.backend import get_bibtex_from_doi, arxiv_to_doi, DOIError
+from doi2bib3 import fetch_bibtex
+
+# Get normalized BibTeX (default)
+bib = fetch_bibtex('https://www.pnas.org/doi/10.1073/pnas.2305943120')
+print(bib)
+
+# Get the raw provider output without normalization
+raw = fetch_bibtex('10.1073/pnas.2305943120', normalize=False)
+```
+
+If you need lower-level helpers, the resolver implementation lives in
+`doi2bib3.backend` (e.g. `get_bibtex_from_doi`, `arxiv_to_doi`) and utilities
+are in `doi2bib3.utils` (e.g. `normalize_bibtex`, `save_bibtex_to_file`). Use
+these when you want to customize error handling or post-processing:
+
+```python
+from doi2bib3.backend import get_bibtex_from_doi, DOIError
 from doi2bib3.utils import normalize_bibtex, save_bibtex_to_file
 
 def fetch_by_identifier(identifier: str, out_path: str | None = None) -> str:
@@ -103,11 +121,12 @@ if __name__ == '__main__':
 	print(fetch_by_identifier('10.1038/nphys1170'))
 ```
 
-You can also call the CLI function directly (useful for tests):
+You can also invoke the thin CLI wrapper from `utils` when writing tests or
+automation:
 
 ```python
-from doi2bib3.utils import cli_doi2bib2
-cli_doi2bib2(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
+from doi2bib3.utils import cli_doi2bib3
+cli_doi2bib3(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
 ```
 
 License

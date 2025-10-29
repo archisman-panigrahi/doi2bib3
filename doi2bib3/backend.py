@@ -17,6 +17,7 @@ from typing import Optional
 import re
 import requests
 from urllib.parse import urlparse, unquote, quote
+from .utils import normalize_bibtex
 
 DOI_REGEX = re.compile(r"^10\..+/.+$")
 
@@ -334,3 +335,26 @@ def _extract_doi_from_url(url: str, timeout: int = 10) -> Optional[str]:
             pass
 
     return None
+
+
+def fetch_bibtex(identifier: str, timeout: int = 15, normalize: bool = True) -> str:
+    """Convenience wrapper for programmatic use.
+
+    - identifier: DOI, DOI URL, arXiv id/URL, or publisher URL (same as CLI)
+    - timeout: network timeout in seconds
+    - normalize: if True (default), pass the fetched BibTeX through
+      `doi2bib3.utils.normalize_bibtex` before returning. If False, the
+      raw text from doi.org / Crossref is returned.
+
+    This keeps `get_bibtex_from_doi` behaviour intact for callers that
+    expect the raw provider output, while giving a convenient API for
+    library users who want the nicely formatted BibTeX the CLI prints.
+    """
+    raw = get_bibtex_from_doi(identifier, timeout=timeout)
+    if normalize:
+        try:
+            return normalize_bibtex(raw)
+        except Exception:
+            # If normalization fails for any reason, fall back to raw text
+            return raw
+    return raw
