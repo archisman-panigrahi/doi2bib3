@@ -7,7 +7,7 @@ Standards-Version: 4.6.0
 Rules-Requires-Root: no
 
 Package: python3-doi2bib3
-Architecture: any
+Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}, python3-bibtexparser
 Description: Fetch BibTeX from DOI, or resolve arXiv IDs to DOI and fetch BibTeX
  A small utility and library to fetch BibTeX entries from DOIs and to resolve arXiv
