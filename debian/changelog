@@ -1,3 +1,11 @@
+doi2bib3 (0.3.0-1) unstable; urgency=medium
+
+  * Fix pages and encoding: normalize unicode dashes and numeric page ranges to
+    ASCII double-dash (`--`) and robustly decode provider responses to avoid
+    mojibake in BibTeX output.
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Thu, 30 Oct 2025 00:00:00 +0000
+
 doi2bib3 (0.2.0-1ubuntu1) unstable; urgency=medium
 
   * Some parsing fixes
