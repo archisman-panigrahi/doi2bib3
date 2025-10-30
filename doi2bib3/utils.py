@@ -56,11 +56,25 @@ def normalize_bibtex(bib_str: str) -> str:
             entry['ID'] = entry['ID'].replace('_', '')
         pages = entry.get('pages')
         if pages:
-            if pages.lower() == 'n/a-n/a':
+            # Normalize common N/A variants to remove the field entirely
+            norm = pages.strip().lower()
+            if norm in ('n/a-n/a', 'na-na', 'n/a', 'na'):
                 entry.pop('pages', None)
             else:
-                if '--' not in pages:
-                    entry['pages'] = pages.replace('-', '--')
+                p = pages
+                # Convert unicode en-dash/em-dash to ASCII double-hyphen
+                p = p.replace('\u2013', '--').replace('\u2014', '--')
+                # Replace en/em characters themselves if present
+                p = p.replace('\u2013', '--').replace('\u2014', '--')
+                # Replace any literal en-dash/em-dash characters too
+                p = p.replace('\u2013', '--').replace('\u2014', '--')
+                p = p.replace('–', '--').replace('—', '--')
+                # Replace single hyphen between digits (with optional spaces)
+                # e.g. '1932-1938', '1932 - 1938', '1932-1938.e3' -> '1932--1938' or '1932--1938.e3'
+                p = re.sub(r'(?<=\d)\s*-[\u2013\u2014-]?\s*(?=\d)', '--', p)
+                # If no double-dash already, ensure we don't inadvertently
+                # convert word hyphens — only numeric ranges should be changed
+                entry['pages'] = p
         if 'url' in entry:
             entry['url'] = urllib.parse.unquote(entry['url'])
         if 'title' in entry:

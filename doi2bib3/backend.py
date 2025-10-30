@@ -80,14 +80,25 @@ def get_bibtex_from_doi(doi: str, timeout: int = 15) -> str:
     url = f'https://doi.org/{doi}'
     resp = requests.get(url, headers=headers, timeout=timeout)
     if resp.status_code == 200:
-        return resp.text
+        # Some providers mislabel encodings; prefer UTF-8 and fall back to
+        # the apparent encoding, replacing invalid bytes. This avoids
+        # mojibake like â€“ for en-dash when requests guesses the wrong codec.
+        try:
+            return resp.content.decode('utf-8')
+        except Exception:
+            enc = resp.apparent_encoding or resp.encoding or 'utf-8'
+            return resp.content.decode(enc, errors='replace')
 
     # fallback to Crossref transform endpoint
     doi_quoted = quote(doi, safe='')
     xurl = f'https://api.crossref.org/works/{doi_quoted}/transform/application/x-bibtex'
     resp2 = requests.get(xurl, headers=headers, timeout=timeout)
     if resp2.status_code == 200:
-        return resp2.text
+        try:
+            return resp2.content.decode('utf-8')
+        except Exception:
+            enc2 = resp2.apparent_encoding or resp2.encoding or 'utf-8'
+            return resp2.content.decode(enc2, errors='replace')
 
     raise DOIError(f"Failed to fetch DOI {doi}: doi.org HTTP {resp.status_code}, crossref HTTP {resp2.status_code}")
 
