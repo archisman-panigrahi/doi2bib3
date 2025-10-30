@@ -11,7 +11,7 @@ Key behaviors
 - Automatically detects arXiv inputs (e.g. `2411.08091`, `arXiv:2411.08091`, or `https://arxiv.org/abs/2411.08091`) and queries the arXiv API for a DOI.
 - For non-arXiv inputs: attempts DOI normalization, content negotiation at doi.org, Crossref transform, and as a last resort a Crossref bibliographic search.
 
-A GUI frontend is available: Check out [QuickBib](https://archisman-panigrahi.github.io/quickbib).
+A GUI frontend is available: Check out [QuickBib](https://archisman-panigrahi.github.io/QuickBib).
 
 Installation
 ------------
