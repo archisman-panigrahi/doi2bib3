@@ -61,7 +61,7 @@ root you can also run the provided `main.py` shim.
 python main.py <identifier> [-o OUT]
 
 # or when installed as console script
-doi2bib3 <identifier> [-o OUT]
+doi2bib3 <identifier> -o references.bib
 ```
 
 Examples
