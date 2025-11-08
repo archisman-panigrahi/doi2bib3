@@ -43,6 +43,7 @@ sudo apt install python3-doi2bib3
 Create a virtual environment and install runtime dependencies:
 
 ```bash
+git clone https://github.com/archisman-panigrahi/doi2bib3.git
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
