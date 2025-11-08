@@ -6,8 +6,6 @@ DOI inputs, DOI URLs, arXiv IDs/URLs (modern and legacy), publisher landing
 pages, and uses a sequence of resolution strategies to return a BibTeX string.
 This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/) and [doi2bib2](https://github.com/davidagraf/doi2bib2).
 
-**It will be submitted to PyPI soon.**
-
 
 Key behaviors
 - Provides bibtex entry for DOI and arXiv links.
