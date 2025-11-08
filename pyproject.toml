@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "doi2bib3"
-version = "0.3.0"
+version = "0.3.1"
 description = "Fetch BibTeX from DOI, or resolve arXiv IDs to DOI and fetch BibTeX"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "GPL-3.0-only"
@@ -14,13 +14,6 @@ maintainers = [ {name = "Archisman Panigrahi", email = "apandada1@gmail.com"} ]
 requires-python = ">=3.8"
 keywords = ["doi", "bibtex", "arxiv"]
 classifiers = [
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Operating System :: OS Independent",
 ]
 
