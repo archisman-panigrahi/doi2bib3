@@ -18,19 +18,11 @@ A GUI frontend is available: Check out [QuickBib](https://archisman-panigrahi.gi
 
 Installation
 ------------
+### Install from pypi
 
-Create a virtual environment and install runtime dependencies:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+[![PyPI version](https://badge.fury.io/py/doi2bib3.svg)](https://badge.fury.io/py/doi2bib3)
 ```
-
-Install the package for local development:
-
-```bash
-pip install -e .
+pip install --user doi2bib3
 ```
 
 <a href="https://repology.org/project/doi2bib3/versions">
@@ -46,6 +38,22 @@ You can use our [official PPA](https://code.launchpad.net/~apandada1/+archive/ub
 sudo add-apt-repository ppa:apandada1/quickbib
 sudo apt update
 sudo apt install python3-doi2bib3
+```
+
+
+### Installing from source
+Create a virtual environment and install runtime dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Install the package for local development:
+
+```bash
+pip install -e .
 ```
 
 CLI usage
