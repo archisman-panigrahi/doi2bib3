@@ -110,30 +110,6 @@ print(bib)
 raw = fetch_bibtex('10.1073/pnas.2305943120', normalize=False)
 ```
 
-If you need lower-level helpers, the resolver implementation lives in
-`doi2bib3.backend` (e.g. `get_bibtex_from_doi`, `arxiv_to_doi`) and utilities
-are in `doi2bib3.utils` (e.g. `normalize_bibtex`, `save_bibtex_to_file`). Use
-these when you want to customize error handling or post-processing:
-
-```python
-from doi2bib3.backend import get_bibtex_from_doi, DOIError
-from doi2bib3.utils import normalize_bibtex, save_bibtex_to_file
-
-def fetch_by_identifier(identifier: str, out_path: str | None = None) -> str:
-	try:
-		raw = get_bibtex_from_doi(identifier)
-	except DOIError as exc:
-		raise RuntimeError(f"Failed to resolve {identifier}: {exc}") from exc
-	cleaned = normalize_bibtex(raw)
-	if out_path:
-		save_bibtex_to_file(cleaned, out_path, append=True)
-		return f"Wrote {out_path}"
-	return cleaned
-
-if __name__ == '__main__':
-	print(fetch_by_identifier('10.1038/nphys1170'))
-```
-
 You can also invoke the thin CLI wrapper from `utils` when writing tests or
 automation:
 
