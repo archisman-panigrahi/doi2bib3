@@ -1,3 +1,9 @@
+doi2bib3 (0.3.1-1) unstable; urgency=medium
+
+  * version bump for pypi release
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Fri, 07 Nov 2025 21:19:23 -0400
+
 doi2bib3 (0.3.0-1) unstable; urgency=medium
 
   * Fix pages and encoding: normalize unicode dashes and numeric page ranges to
