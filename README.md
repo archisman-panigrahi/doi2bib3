@@ -92,7 +92,7 @@ doi2bib3 hep-th/9901001
 
 Name of the paper (includes fuzzy search):
 ```bash
-doi2bib3 "Non-Hermitian dislocation modes: Stability and melting across exceptional points"
+doi2bib3 "Projected Topological Branes"
 ```
 
 Save to a file:
