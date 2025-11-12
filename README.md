@@ -18,11 +18,13 @@ Installation
 ------------
 ### Install from pypi
 
-[![PyPI version](https://badge.fury.io/py/doi2bib3.svg)](https://badge.fury.io/py/doi2bib3)
 ```
 pip install --user doi2bib3
 ```
 
+<a href="https://repology.org/project/python%3Adoi2bib3/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/python%3Adoi2bib3.svg" alt="Packaging status" align="right">
+</a>
 <a href="https://repology.org/project/doi2bib3/versions">
     <img src="https://repology.org/badge/vertical-allrepos/doi2bib3.svg" alt="Packaging status" align="right">
 </a>
