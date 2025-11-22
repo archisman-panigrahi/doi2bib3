@@ -54,6 +54,73 @@ def normalize_bibtex(bib_str: str) -> str:
     for entry in bib_db.entries:
         if 'ID' in entry:
             entry['ID'] = entry['ID'].replace('_', '')
+
+    def _make_bibtex_key(entry):
+        """Generate a key of the form `Lastname_firstword_year`.
+
+        - `lastname`: last name of the first author (comma or space name formats supported)
+        - `firstword`: first word of the title (braces/quotes removed)
+        - `year`: value of the `year` field if present
+
+        The result is lowercased and non-alphanumeric characters (except hyphen)
+        are removed from each component. If the generated key already exists
+        in `seen`, a, b, c... suffixes are appended to disambiguate.
+        """
+        def _clean(s, lower=True):
+            if not s:
+                return ''
+            s = s.strip()
+            # remove surrounding braces/quotes
+            s = re.sub(r'^[{\"\']+|[}\"\']+$', '', s)
+            if lower:
+                s = s.lower()
+                # keep letters, digits and hyphens
+                s = re.sub(r'[^a-z0-9\-]+', '', s)
+            else:
+                # preserve case for parts like last name; allow letters (both cases), digits and hyphens
+                s = re.sub(r'[^A-Za-z0-9\-]+', '', s)
+            return s
+
+        # first author
+        auth = entry.get('author', '')
+        firstname_lastname = ''
+        if auth:
+            # bibtexparser leaves authors as single string with ' and ' separators
+            first_author = auth.split(' and ')[0].strip()
+            if ',' in first_author:
+                # format: Last, First
+                lastname = first_author.split(',', 1)[0].strip()
+            else:
+                # format: First Last
+                parts = first_author.split()
+                lastname = parts[-1] if parts else ''
+            firstname_lastname = _clean(lastname, lower=False)
+
+        # first word of title
+        title = entry.get('title', '')
+        firstword = ''
+        if title:
+            # remove surrounding braces and LaTeX macros roughly
+            t = re.sub(r'[{}]', '', title)
+            # split on whitespace and punctuation
+            tw = re.split(r'\s+', t.strip())
+            if tw:
+                firstword = _clean(tw[0])
+
+        year = _clean(entry.get('year', ''))
+
+        base = '_'.join(p for p in (firstname_lastname, firstword, year) if p)
+        if not base:
+            # fallback to original ID or a short randomish fallback
+            base = _clean(entry.get('ID', 'entry')) or 'entry'
+
+        # Return the base key directly (no collision tracking / suffixing).
+        return base
+
+    # regenerate keys (no collision tracking)
+    for entry in bib_db.entries:
+        new_id = _make_bibtex_key(entry)
+        entry['ID'] = new_id
         pages = entry.get('pages')
         if pages:
             # Normalize common N/A variants to remove the field entirely
