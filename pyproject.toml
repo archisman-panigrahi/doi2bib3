@@ -22,6 +22,13 @@ dependencies = [
   "bibtexparser",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "build>=1.2.2.post1",
+    "pytest>=9.0.1",
+]
+
+
 [project.urls]
 "Homepage" = "https://github.com/archisman-panigrahi/doi2bib3"
 "Source" = "https://github.com/archisman-panigrahi/doi2bib3"
@@ -32,3 +39,12 @@ doi2bib3 = "doi2bib3.utils:cli_doi2bib3"
 
 [tool.setuptools.packages.find]
 include = ["doi2bib3*"]
+
+[tool.pytest.ini_options]
+# pythonpath = "src"
+testpaths = "tests"
+filterwarnings = "ignore::pytest.PytestCacheWarning"
+markers = [
+    "blackbox: a black-box test",
+    "imported: a test which imports a function of the script",
+]
