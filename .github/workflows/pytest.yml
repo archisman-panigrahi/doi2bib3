@@ -1,0 +1,39 @@
+name: CI_pytest
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 1 * *"  # once each 1st of a month, at 00:00 UTC (cf. https://crontab.guru/)
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        # for a factorial test, an explicit selection of GitHub runner images
+        # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.13"]
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 3  # Timeout for each job individually
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies with PyPI
+        run: pip install ".[dev]"
+
+      - name: Run the check with pytest
+        run: python -m pytest
+
