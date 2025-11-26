@@ -1,4 +1,4 @@
-doi2bib3 (0.4.0-1) unstable; urgency=medium
+python3-doi2bib3 (0.4.0-1) unstable; urgency=medium
 
   * Add title's first word to generated BibTeX key to prevent duplicate
     entries when the same author publishes multiple papers in the same year.
