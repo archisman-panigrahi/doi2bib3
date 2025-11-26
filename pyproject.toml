@@ -26,6 +26,7 @@ dependencies = [
 dev = [
     "build>=1.2.2.post1",
     "pytest>=9.0.1",
+    "tox>=4.32.0",
 ]
 
 
