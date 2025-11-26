@@ -19,7 +19,7 @@ A cross-platform **GUI frontend** is available: Check out [QuickBib](https://arc
 
 ## Installation
 
-![Packaging status](https://repology.org/badge/vertical-allrepos/python:doi2bib3.svg?columns=3)
+[![Packaging status](https://repology.org/badge/vertical-allrepos/python:doi2bib3.svg?columns=3)](https://repology.org/project/python:doi2bib3/versions)
 
 
 ### Install from pypi
