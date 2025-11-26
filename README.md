@@ -19,18 +19,14 @@ A cross-platform **GUI frontend** is available: Check out [QuickBib](https://arc
 
 ## Installation
 
+![Packaging status](https://repology.org/badge/vertical-allrepos/python:doi2bib3.svg?columns=3)
+
+
 ### Install from pypi
 
 ```shell
 pip install --user doi2bib3
 ```
-
-<a href="https://repology.org/project/python%3Adoi2bib3/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/python%3Adoi2bib3.svg" alt="Packaging status" align="right">
-</a>
-<a href="https://repology.org/project/doi2bib3/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/doi2bib3.svg" alt="Packaging status" align="right">
-</a>
 
 ### Arch Linux
 
