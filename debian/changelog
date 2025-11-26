@@ -1,3 +1,17 @@
+python-doi2bib3 (0.4.0-3) unstable; urgency=medium
+
+  * Closes: #1121438 (ITP)
+  * Fix debian build
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Wed, 26 Nov 2025 13:02:44 -0500
+
+python-doi2bib3 (0.4.0-2) unstable; urgency=medium
+
+  * Closes: #1121438 (ITP)
+  * Fix lintian warnings
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Wed, 26 Nov 2025 10:49:40 -0500
+
 python-doi2bib3 (0.4.0-1) unstable; urgency=medium
 
   * Add title's first word to generated BibTeX key to prevent duplicate

@@ -1,6 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: doi2bib3
-Source: https://github.com/archisman-panigrahi/python-doi2bib3
+Source: https://github.com/archisman-panigrahi/doi2bib3
+Upstream-Contact: Archisman Panigrahi <apandada1@gmail.com>
 
 Files: *
 Copyright: 2025 Archisman Panigrahi
