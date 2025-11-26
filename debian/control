@@ -10,5 +10,5 @@ Package: python3-doi2bib3
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}, python3-bibtexparser
 Description: Fetch BibTeX from DOI, arXiv ID, journal URL or article title
- A small utility and library to fetch BibTeX entries from DOIs, arXiv ids,
+ A command-line utility and library to fetch BibTeX entries from DOIs, arXiv ids,
  IDs and also export to .bib files.
