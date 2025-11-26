@@ -1,4 +1,4 @@
-Source: doi2bib3
+Source: python3-doi2bib3
 Section: python
 Priority: optional
 Maintainer: Archisman Panigrahi <apandada1@gmail.com>
