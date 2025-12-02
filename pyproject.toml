@@ -11,7 +11,7 @@ license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 authors = [ {name = "Archisman Panigrahi", email = "apandada1@gmail.com"} ]
 maintainers = [ {name = "Archisman Panigrahi", email = "apandada1@gmail.com"} ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["doi", "bibtex", "arxiv"]
 classifiers = [
   "Operating System :: OS Independent",
@@ -21,6 +21,14 @@ dependencies = [
   "requests",
   "bibtexparser",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2.2.post1",
+    "pytest>=9.0.1",
+    "tox>=4.32.0",
+]
+
 
 [project.urls]
 "Homepage" = "https://github.com/archisman-panigrahi/doi2bib3"
@@ -32,3 +40,12 @@ doi2bib3 = "doi2bib3.utils:cli_doi2bib3"
 
 [tool.setuptools.packages.find]
 include = ["doi2bib3*"]
+
+[tool.pytest.ini_options]
+# pythonpath = "src"
+testpaths = "tests"
+filterwarnings = "ignore::pytest.PytestCacheWarning"
+markers = [
+    "blackbox: a black-box test",
+    "imported: a test which imports a function of the script",
+]
