@@ -30,7 +30,7 @@ pip install --user doi2bib3
 
 ### Arch Linux
 
-In Arch Linux you can install it from the [AUR](https://aur.archlinux.org/packages/doi2bib3) with the command `yay -S doi2bib3`.
+In Arch Linux you can install it from the [AUR](https://aur.archlinux.org/packages/doi2bib3) with the command `yay -S python-doi2bib3`.
 
 ### Ubuntu
 
