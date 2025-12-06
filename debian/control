@@ -5,7 +5,7 @@ Maintainer: Archisman Panigrahi <apandada1@gmail.com>
 Homepage: https://github.com/archisman-panigrahi/doi2bib3
 Vcs-Git: https://github.com/archisman-panigrahi/doi2bib3.git
 Vcs-Browser: https://github.com/archisman-panigrahi/doi2bib3
-Build-Depends: debhelper-compat (= 10), dh-python, python3-all, python3-setuptools
+Build-Depends: debhelper-compat (= 10), dh-python, python3-all (>=3.9.0), python3-setuptools
 Standards-Version: 4.7.2
 Rules-Requires-Root: no
 

@@ -1,3 +1,10 @@
+python-doi2bib3 (0.5.0-1) unstable; urgency=medium
+
+  * Add journal name abbreviation support using APS and Nature replacement dictionaries
+  * Fixed APS journal "pages" entry
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Sat, 06 Dec 2025 12:00:00 -0500
+
 python-doi2bib3 (0.4.1-1) unstable; urgency=medium
 
   * fixed title formatting
