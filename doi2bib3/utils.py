@@ -19,6 +19,7 @@ import re
 import urllib.parse
 import bibtexparser
 import os
+import requests
 
 SPECIAL_CHARS = {
     'a\u0300': "\\`a",
@@ -95,6 +96,31 @@ def encode_special_chars(value: str) -> str:
     for k, v in SPECIAL_CHARS.items():
         value = value.replace(k, v)
     return value
+
+
+def fetch_article_number_from_crossref(doi: str, timeout: int = 10) -> Optional[str]:
+    """Fetch article-number from Crossref API for a given DOI.
+    
+    Returns the article-number if found, None otherwise.
+    """
+    try:
+        # Remove any prefix from DOI
+        doi_clean = doi.strip()
+        if doi_clean.lower().startswith('doi:'):
+            doi_clean = doi_clean[4:].strip()
+        
+        url = f'https://api.crossref.org/works/{urllib.parse.quote(doi_clean, safe="")}'
+        resp = requests.get(url, timeout=timeout)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            message = data.get('message', {})
+            article_number = message.get('article-number')
+            return article_number
+    except Exception:
+        pass
+    
+    return None
 
 
 def normalize_bibtex(bib_str: str) -> str:
@@ -190,6 +216,15 @@ def normalize_bibtex(bib_str: str) -> str:
                 # If no double-dash already, ensure we don't inadvertently
                 # convert word hyphens — only numeric ranges should be changed
                 entry['pages'] = p
+        # For American Physical Society journals, fetch article-number from Crossref if no pages
+        # Do this BEFORE removing DOI (which happens if URL is present)
+        publisher = entry.get('publisher', '').strip()
+        if 'American Physical Society' in publisher and not pages:
+            doi = entry.get('doi', '').strip()
+            if doi:
+                article_num = fetch_article_number_from_crossref(doi)
+                if article_num:
+                    entry['pages'] = article_num
         if 'url' in entry:
             entry['url'] = urllib.parse.unquote(entry['url'])
             # Remove DOI field if URL is present
