@@ -43,6 +43,54 @@ def insert_dollars(title: str) -> str:
     return VAR_RE.sub(r"\\1$\\2$\\3", title)
 
 
+def protect_capitalized_words(title: str) -> str:
+    """Wrap capitalized words in curly braces for BibTeX title protection.
+    
+    This protects words that start with a capital letter from being
+    lowercased by BibTeX bibliography styles. Handles words after hyphens too.
+    
+    Examples:
+    - "Non-Fermi Liquids" -> "{Non}-{Fermi} {Liquids}"
+    - "van der Waals" -> "van der {Waals}"
+    """
+    # Pattern to match:
+    # 1. A word that starts with a capital letter (including after hyphen)
+    # 2. The word can contain letters, numbers, and hyphens
+    # We need to be careful not to wrap words that are already in braces
+    
+    result = []
+    i = 0
+    while i < len(title):
+        # Check if we're at the start of an already-braced section
+        if title[i] == '{':
+            # Find the matching closing brace
+            brace_count = 1
+            j = i + 1
+            while j < len(title) and brace_count > 0:
+                if title[j] == '{':
+                    brace_count += 1
+                elif title[j] == '}':
+                    brace_count -= 1
+                j += 1
+            # Keep the braced content as-is
+            result.append(title[i:j])
+            i = j
+        # Check if we're at the start of a word with a capital letter
+        elif title[i].isupper():
+            # Collect the word (letters, numbers, and hyphens)
+            j = i
+            while j < len(title) and (title[j].isalnum() or title[j] == '-'):
+                j += 1
+            word = title[i:j]
+            result.append('{' + word + '}')
+            i = j
+        else:
+            result.append(title[i])
+            i += 1
+    
+    return ''.join(result)
+
+
 def encode_special_chars(value: str) -> str:
     for k, v in SPECIAL_CHARS.items():
         value = value.replace(k, v)
@@ -146,6 +194,7 @@ def normalize_bibtex(bib_str: str) -> str:
             entry['url'] = urllib.parse.unquote(entry['url'])
         if 'title' in entry:
             entry['title'] = insert_dollars(entry['title'])
+            entry['title'] = protect_capitalized_words(entry['title'])
         if 'month' in entry:
             entry['month'] = entry['month'].strip()
             if entry['month'].startswith('{') and entry['month'].endswith('}'):

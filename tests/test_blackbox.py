@@ -42,7 +42,7 @@ import pytest
  number = {1},
  pages = {11--12},
  publisher = {Springer Science and Business Media LLC},
- title = {Measured measurement},
+ title = {{Measured} measurement},
  url = {http://dx.doi.org/10.1038/nphys1170},
  volume = {5},
  year = {2009}
@@ -61,7 +61,7 @@ import pytest
  number = {1},
  pages = {11--12},
  publisher = {Springer Science and Business Media LLC},
- title = {Measured measurement},
+ title = {{Measured} measurement},
  url = {http://dx.doi.org/10.1038/nphys1170},
  volume = {5},
  year = {2009}
@@ -79,7 +79,7 @@ import pytest
  month = {June},
  number = {23},
  publisher = {American Physical Society (APS)},
- title = {Non-Fermi Liquids from Subsystem Symmetry Breaking in van der Waals Multilayers},
+ title = {{Non-Fermi} {Liquids} from {Subsystem} {Symmetry} {Breaking} in van der {Waals} {Multilayers}},
  url = {http://dx.doi.org/10.1103/v6r7-4ph9},
  volume = {134},
  year = {2025}
@@ -110,7 +110,7 @@ def test_article_output(capfd, input_value, expected_output) -> None:
  month = {September},
  number = {1},
  publisher = {Springer Science and Business Media LLC},
- title = {Projected topological branes},
+ title = {{Projected} topological branes},
  url = {http://dx.doi.org/10.1038/s42005-022-01006-x},
  volume = {5},
  year = {2022}
