@@ -20,6 +20,7 @@ import urllib.parse
 import bibtexparser
 import os
 import requests
+import json
 
 SPECIAL_CHARS = {
     'a\u0300': "\\`a",
@@ -38,6 +39,49 @@ SPECIAL_CHARS = {
 
 
 VAR_RE = re.compile(r"(\\{)(\\var[A-Z]?[a-z]*)(\\})")
+
+
+def _load_journal_replacements():
+    """Load journal name replacement dictionaries from JSON files."""
+    replacements = {}
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    for json_file in ['APS_replacement.json', 'Nature_replacement.json']:
+        file_path = os.path.join(current_dir, json_file)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                replacements.update(data)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # If file doesn't exist or is invalid JSON, skip silently
+            pass
+    
+    return replacements
+
+
+# Load journal replacements once at module initialization
+_JOURNAL_REPLACEMENTS = _load_journal_replacements()
+
+
+def abbreviate_journal_name(journal: str) -> str:
+    """Replace journal name with its abbreviation if found in replacement dicts.
+    
+    Checks exact matches first, then case-insensitive matches.
+    """
+    if not journal:
+        return journal
+    
+    # Try exact match first
+    if journal in _JOURNAL_REPLACEMENTS:
+        return _JOURNAL_REPLACEMENTS[journal]
+    
+    # Try case-insensitive match
+    for full_name, abbrev in _JOURNAL_REPLACEMENTS.items():
+        if full_name.lower() == journal.lower():
+            return abbrev
+    
+    # No match found, return original
+    return journal
 
 
 def insert_dollars(title: str) -> str:
@@ -232,6 +276,8 @@ def normalize_bibtex(bib_str: str) -> str:
         if 'title' in entry:
             entry['title'] = insert_dollars(entry['title'])
             entry['title'] = protect_capitalized_words(entry['title'])
+        if 'journal' in entry:
+            entry['journal'] = abbreviate_journal_name(entry['journal'])
         if 'month' in entry:
             entry['month'] = entry['month'].strip()
             if entry['month'].startswith('{') and entry['month'].endswith('}'):
