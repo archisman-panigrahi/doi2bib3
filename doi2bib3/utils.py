@@ -192,6 +192,8 @@ def normalize_bibtex(bib_str: str) -> str:
                 entry['pages'] = p
         if 'url' in entry:
             entry['url'] = urllib.parse.unquote(entry['url'])
+            # Remove DOI field if URL is present
+            entry.pop('doi', None)
         if 'title' in entry:
             entry['title'] = insert_dollars(entry['title'])
             entry['title'] = protect_capitalized_words(entry['title'])
