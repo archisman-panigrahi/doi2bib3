@@ -1,6 +1,6 @@
-python-doi2bib3 (0.5.1-1) unstable; urgency=medium
+python-doi2bib3 (0.5.2-1) unstable; urgency=medium
 
-  * Version bump for PyPI release. Previously a slightly older code was pushed by GitHub actions.
+  * Version bump for PyPI release. Previously the JSON files were omitted.
 
  -- Archisman Panigrahi <apandada1@gmail.com>  Mon, 15 Dec 2025 12:00:00 -0500
 

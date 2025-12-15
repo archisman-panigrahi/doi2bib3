@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "doi2bib3"
-version = "0.5.1"
+version = "0.5.2"
 description = "Fetch BibTeX from DOI, arXiv ID, journal URL and article title"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "GPL-3.0-only"
@@ -40,6 +40,12 @@ doi2bib3 = "doi2bib3.utils:cli_doi2bib3"
 
 [tool.setuptools.packages.find]
 include = ["doi2bib3*"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+doi2bib3 = ["*.json"]
 
 [tool.pytest.ini_options]
 # pythonpath = "src"
