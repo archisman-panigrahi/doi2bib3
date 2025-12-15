@@ -12,6 +12,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Ensure we build from the exact release tag
+          ref: ${{ github.event.release.tag_name }}
+          # Fetch full history so setuptools_scm or similar tools (if added later)
+          # and version comparisons work correctly
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
