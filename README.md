@@ -15,7 +15,7 @@ Key behaviors
   doi.org, Crossref transform, and as a last resort a Crossref bibliographic
   search.
 
-A cross-platform **GUI frontend** is available: Check out [QuickBib](https://archisman-panigrahi.github.io/QuickBib).
+A cross-platform **GUI frontend** is available: Check out [QuickBib](https://archisman-panigrahi.github.io/QuickBib) and its [webapp](https://quickbib.streamlit.app/).
 
 ## Installation
 
