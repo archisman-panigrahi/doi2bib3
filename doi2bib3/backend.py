@@ -69,7 +69,7 @@ def get_bibtex_from_doi(doi: str, timeout: int = 15) -> str:
         except DOIError:
             found = crossref_search_for_doi(doi, timeout=timeout)
             if not found:
-                raise DOIError(f"Invalid DOI and Crossref lookup failed for: {doi}")
+                raise DOIError(f"Crossref lookup failed for: {doi}")
             doi = found
 
     headers = {
