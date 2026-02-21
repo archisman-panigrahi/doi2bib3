@@ -14,6 +14,8 @@ Key behaviors
 - For non-arXiv inputs: attempts DOI normalization, content negotiation at
   doi.org, Crossref transform, and as a last resort a Crossref bibliographic
   search.
+- Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
+- Diagram version of the pipeline: [`docs/ALGORITHM_VISUALS.md`](docs/ALGORITHM_VISUALS.md)
 
 A cross-platform **GUI frontend** is available: Check out [QuickBib](https://archisman-panigrahi.github.io/QuickBib) and its [webapp](https://quickbib.streamlit.app/).
 
@@ -64,11 +66,11 @@ pip install -e .
 The CLI accepts a single positional identifier and an optional `-o/--out`
 path to save the BibTeX output. When installed, the package installs a console
 script named `doi2bib3` (configured in `pyproject.toml`). From the repository
-root you can also run the provided `main.py` shim.
+root you can run the local script wrapper at `scripts/doi2bib3`.
 
 ```bash
-# using the local shim
-python main.py <identifier> [-o OUT]
+# using the local wrapper script from repo root
+python scripts/doi2bib3 <identifier> [-o OUT]
 
 # or when installed as console script
 doi2bib3 <identifier> -o references.bib
@@ -104,33 +106,44 @@ Save to a file:
 doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
 
-Note: If the tool is not installed, you can run it with `python main.py https://doi.org/10.1038/nphys1170` and so on.
+Note: If the tool is not installed, you can run `python scripts/doi2bib3 https://doi.org/10.1038/nphys1170`.
 
 ## Programmatic usage
 
-The package exposes a small programmatic API so you can use doi2bib3 from
-Python code. The most convenient entry point is the package-level
-`fetch_bibtex` function which mirrors the CLI behavior and returns normalized
-BibTeX by default:
+### Public API
+
+The Python API intentionally exposes one primary function:
+
+- `doi2bib3.fetch_bibtex(identifier: str, timeout: int = 15) -> str`
+
+Behavior:
+
+- Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
+- Resolves input to a DOI using arXiv and/or Crossref when needed.
+- Fetches BibTeX via DOI content negotiation (with Crossref fallback).
+- Returns normalized BibTeX output (same formatting as CLI output).
+- Full step-by-step algorithm: [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
+
+Example:
 
 ```python
 from doi2bib3 import fetch_bibtex
 
-# Get normalized BibTeX (default)
 bib = fetch_bibtex('https://www.pnas.org/doi/10.1073/pnas.2305943120')
 print(bib)
-
-# Get the raw provider output without normalization
-raw = fetch_bibtex('10.1073/pnas.2305943120', normalize=False)
 ```
 
-You can also invoke the thin CLI wrapper from `utils` when writing tests or
-automation:
+### Programmatic CLI entry
 
-```python
-from doi2bib3.utils import cli_doi2bib3
-cli_doi2bib3(['https://arxiv.org/abs/2411.08091', '--out', 'paper.bib'])
-```
+Use `subprocess` with `scripts/doi2bib3` (or installed `doi2bib3` command)
+for automated CLI tests.
+
+## Internal module layout
+
+- `doi2bib3/backend.py`: input resolution and network fetch logic
+- `doi2bib3/normalize.py`: BibTeX normalization/transforms
+- `doi2bib3/io.py`: file output helpers
+- `scripts/doi2bib3`: command-line argument parsing and output handling
 
 ## License
 
@@ -138,4 +151,4 @@ This project is distributed under the GNU General Public License v3 (GPL-3.0-onl
 
 ## Acknowledgements
 
-Parts of the code and documentation were assisted by copilot.
+Parts of the code and documentation were assisted by copilot and codex.
