@@ -2,8 +2,6 @@
 
 Simple visual diagrams for `docs/ALGORITHM.md`.
 
-GitHub renders Mermaid blocks directly. If your editor does not, open this file on GitHub or paste blocks into https://mermaid.live.
-
 ## 1) End-to-End Flow
 
 ```mermaid
