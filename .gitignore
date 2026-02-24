@@ -163,13 +163,4 @@ debian/.debhelper/generated/python3-doi2bib3/installed-by-dh_install
 debian/.debhelper/generated/python3-doi2bib3/installed-by-dh_installdocs
 debian/debhelper-build-stamp
 debian/files
-debian/python3-doi2bib3.install
-debian/python3-doi2bib3.postinst.debhelper
-debian/python3-doi2bib3.prerm.debhelper
-debian/python3-doi2bib3.substvars
-debian/python3-doi2bib3/DEBIAN/control
-debian/python3-doi2bib3/DEBIAN/md5sums
-debian/python3-doi2bib3/DEBIAN/postinst
-debian/python3-doi2bib3/DEBIAN/prerm
-debian/python3-doi2bib3/usr/share/doc/python3-doi2bib3/changelog.Debian.gz
-debian/python3-doi2bib3/usr/share/doc/python3-doi2bib3/copyright
+debian/python3-doi2bib3*

@@ -1,8 +1,14 @@
+python-doi2bib3 (0.6.0-1) unstable; urgency=medium
+
+  * Rewrite to refactor code 
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Tue, 24 Feb 2026 09:05:55 -0500
+
 python-doi2bib3 (0.5.3-1) unstable; urgency=medium
 
   * Minor update for change of wording of error message
 
- -- Archisman Panigrahi <apandada1@gmail.com>  wed, -4 Feb 2025 07:34:01 -0500
+ -- Archisman Panigrahi <apandada1@gmail.com>  Wed, -4 Feb 2025 07:34:01 -0500
  
 python-doi2bib3 (0.5.2-1) unstable; urgency=medium
 

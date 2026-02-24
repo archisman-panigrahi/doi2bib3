@@ -112,7 +112,7 @@ Note: If the tool is not installed, you can run `python scripts/doi2bib3 https:/
 
 ### Public API
 
-The Python API intentionally exposes one primary function:
+The Python API exposes one primary function:
 
 - `doi2bib3.fetch_bibtex(identifier: str, timeout: int = 15) -> str`
 
