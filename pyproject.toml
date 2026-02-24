@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "doi2bib3"
-version = "0.5.3"
+version = "0.6.0"
 description = "Fetch BibTeX from DOI, arXiv ID, journal URL and article title"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "GPL-3.0-only"
@@ -35,14 +35,12 @@ dev = [
 "Source" = "https://github.com/archisman-panigrahi/doi2bib3"
 "Bug Tracker" = "https://github.com/archisman-panigrahi/doi2bib3/issues"
 
-[project.scripts]
-doi2bib3 = "doi2bib3.utils:cli_doi2bib3"
-
 [tool.setuptools.packages.find]
 include = ["doi2bib3*"]
 
 [tool.setuptools]
 include-package-data = true
+script-files = ["scripts/doi2bib3"]
 
 [tool.setuptools.package-data]
 doi2bib3 = ["*.json"]
