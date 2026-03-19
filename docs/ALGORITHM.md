@@ -48,7 +48,7 @@ On any exception, CLI prints `Error: <message>` to stderr and exits code 1.
 `fetch_bibtex(identifier, timeout)` does:
 
 1. Resolve input identifier to a DOI string.
-- `_resolve_identifier_to_doi()` in `doi2bib3/backend.py`
+- `_resolve_identifier()` in `doi2bib3/backend.py`
 
 2. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
 - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
@@ -62,7 +62,7 @@ On any exception, CLI prints `Error: <message>` to stderr and exits code 1.
 
 ## 4. Identifier -> DOI resolution
 
-Resolution order is deterministic and is implemented in `_resolve_identifier_to_doi()` (`doi2bib3/backend.py`).
+Resolution order is deterministic and is implemented in `_resolve_identifier()` (`doi2bib3/backend.py`).
 
 ### 4.1 Try arXiv parsing first
 
@@ -71,6 +71,9 @@ Input is considered arXiv if it matches one of these forms:
 - `arXiv:2411.08091`
 - `2411.08091` (with optional `vN`)
 - legacy IDs like `hep-th/9901001` (with optional `vN`)
+- arXiv DOI forms such as:
+  - `10.48550/arXiv.2411.08091`
+  - `https://doi.org/10.48550/arXiv.2411.08091`
 - arXiv URLs such as:
   - `https://arxiv.org/abs/...`
   - `https://arxiv.org/pdf/...pdf`
@@ -80,24 +83,37 @@ Implementation:
 
 1. Parse and validate arXiv form.
 - `_parse_arxiv_id_string()` using `ARXIV_ID_PATTERN` in `doi2bib3/backend.py`
+- arXiv DOI inputs are recognized by `_parse_arxiv_id_from_doi_string()` in `doi2bib3/backend.py`
 
-2. Query arXiv API:
-- `https://export.arxiv.org/api/query?id_list=<id>`
-- Implemented by `_resolve_doi_from_arxiv_id()` in `doi2bib3/backend.py`
+2. Query arXiv API for metadata:
+- tries these endpoints in order until one succeeds with a non-empty feed:
+  - `http://export.arxiv.org/api/query?id_list=<id>`
+  - `https://export.arxiv.org/api/query?id_list=<id>`
+  - `https://arxiv.org/api/query?id_list=<id>`
+  - `http://arxiv.org/api/query?id_list=<id>`
+- sends a `User-Agent` header for the arXiv request
+- implemented by `_fetch_arxiv_entry()` / `_fetch_arxiv_metadata()` in `doi2bib3/backend.py`
 
-3. Extract DOI from the response using first matching pattern:
+3. Extract metadata from the arXiv Atom entry:
+- published DOI from the first matching pattern:
 - `<arxiv:doi>...</arxiv:doi>`
 - `<doi>...</doi>`
 - DOI links like `https://doi.org/...` or `https://dx.doi.org/...`
-- Implemented by regex loop inside `_resolve_doi_from_arxiv_id()`
+- primary category from `<arxiv:primary_category term="...">`
+- implemented by `_extract_published_doi_from_arxiv_entry()` and `_extract_primary_class_from_arxiv_entry()` in `doi2bib3/backend.py`
 
-4. If DOI not found from arXiv metadata:
+4. If a published DOI is present:
+- use that DOI
+- implemented by `_resolve_arxiv_identifier()` in `doi2bib3/backend.py`
+
+5. If no published DOI is found from arXiv metadata:
 - try DataCite-style fallback DOI: `10.48550/arXiv.<id-without-version>`
-- Implemented in `_resolve_identifier_to_doi()`
+- version suffix is removed before constructing the DOI
+- implemented by `_resolve_arxiv_identifier()` in `doi2bib3/backend.py`
 
-5. If still invalid:
+6. If still invalid:
 - raise `DOIError("No DOI found for arXiv id: ...")`
-- Implemented in `_resolve_identifier_to_doi()`
+- implemented by `_resolve_arxiv_identifier()` in `doi2bib3/backend.py`
 
 ### 4.2 If not arXiv, try DOI parsing
 
@@ -106,6 +122,11 @@ Accept DOI-like input:
 - bare DOI, e.g. `10.1038/nphys1170`
 - `doi:10.1038/nphys1170`
 - DOI URL, e.g. `https://doi.org/10.1038/nphys1170`
+
+Special case:
+
+- if the DOI parses as `10.48550/arXiv.<id>`, it is treated as an arXiv preprint DOI and arXiv metadata is still queried for enrichment
+- BibTeX is still fetched from the DOI itself
 
 Normalization rules:
 
@@ -158,7 +179,7 @@ If still unresolved:
 - Implemented in `_search_doi_via_crossref()`
 
 4. Parse/validate selected DOI.
-- `_parse_doi_string()` called by `_resolve_identifier_to_doi()`
+- `_parse_doi_string()` called by `_resolve_identifier()` / `_resolve_identifier_to_doi()`
 
 If none found: raise `DOIError("Crossref lookup failed for: ...")`.
 - Implemented in `_resolve_identifier_to_doi()`
@@ -189,7 +210,7 @@ Given resolved DOI:
 ## 6. BibTeX normalization
 
 Raw provider BibTeX is normalized before returning.
-- Main function: `normalize_bibtex(bib_str)` in `doi2bib3/normalize.py`
+- Main function: `normalize_bibtex(bib_str, arxiv_id=None, primary_class=None, include_arxiv_fields=False)` in `doi2bib3/normalize.py`
 
 For each entry:
 
@@ -218,12 +239,20 @@ For each entry:
 - drop `doi` field (avoid duplication)
 - Implemented in URL block inside `normalize_bibtex()`
 
-5. Title formatting:
+5. Unpublished arXiv enrichment:
+- when `include_arxiv_fields=True` and an arXiv id is available:
+  - add `archivePrefix = {arXiv}`
+  - add `eprint = {<arxiv-id-without-version>}`
+  - add `primaryClass = {<primary-category>}` when available
+- used only for arXiv inputs that do not have a published journal DOI
+- implemented in `normalize_bibtex()`
+
+6. Title formatting:
 - convert `\{\var...\}` placeholders to math form with dollars
 - protect capitalized words by wrapping with `{...}`
 - Implemented by `insert_dollars()` and `protect_capitalized_words()` called in `normalize_bibtex()`
 
-6. Journal formatting:
+7. Journal formatting:
 - apply abbreviation mapping from bundled JSON dictionaries:
   - `APS_replacement.json`
   - `Nature_replacement.json`
@@ -231,11 +260,11 @@ For each entry:
 - Abbreviation lookup: `abbreviate_journal_name()`
 - Applied inside `normalize_bibtex()`
 
-7. Month cleanup:
+8. Month cleanup:
 - strip outer braces `{January}` -> `January`
 - Implemented in month block inside `normalize_bibtex()`
 
-8. Special character encoding:
+9. Special character encoding:
 - apply selected unicode -> LaTeX substitutions in
   - `title`
   - `journal`
@@ -260,8 +289,8 @@ Finally, serialize with `bibtexparser.dumps`.
 
 Resolution/fetch may contact:
 
-- `export.arxiv.org` (arXiv metadata)
-  - `_resolve_doi_from_arxiv_id()` in `doi2bib3/backend.py`
+- `export.arxiv.org` / `arxiv.org` API endpoints (arXiv metadata)
+  - `_fetch_arxiv_entry()` / `_fetch_arxiv_metadata()` in `doi2bib3/backend.py`
 - `doi.org` (content negotiation for BibTeX)
   - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
 - `api.crossref.org` (search, transform, APS article-number)
