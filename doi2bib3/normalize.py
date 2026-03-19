@@ -137,7 +137,12 @@ def fetch_article_number_from_crossref(doi: str, timeout: int = 10) -> Optional[
     return None
 
 
-def normalize_bibtex(bib_str: str) -> str:
+def normalize_bibtex(
+    bib_str: str,
+    arxiv_id: Optional[str] = None,
+    primary_class: Optional[str] = None,
+    include_arxiv_fields: bool = False,
+) -> str:
     bib_db = bibtexparser.loads(bib_str)
     for entry in bib_db.entries:
         if "ID" in entry:
@@ -221,6 +226,12 @@ def normalize_bibtex(bib_str: str) -> str:
             entry["month"] = entry["month"].strip()
             if entry["month"].startswith("{") and entry["month"].endswith("}"):
                 entry["month"] = entry["month"][1:-1]
+
+        if include_arxiv_fields and arxiv_id:
+            entry["archivePrefix"] = "arXiv"
+            entry["eprint"] = arxiv_id
+            if primary_class:
+                entry["primaryClass"] = primary_class
 
         for key in list(entry.keys()):
             if key in ["title", "journal", "booktitle"]:

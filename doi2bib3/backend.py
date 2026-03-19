@@ -15,6 +15,7 @@
 
 """Identifier resolution and network fetching for BibTeX retrieval."""
 
+from dataclasses import dataclass
 from typing import Optional
 import re
 from urllib.parse import quote, unquote, urlparse
@@ -26,10 +27,24 @@ from .normalize import normalize_bibtex
 DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$")
 DOI_IN_TEXT_PATTERN = re.compile(r"10\.\d{4,9}/[^\s'\"<>]+")
 ARXIV_ID_PATTERN = re.compile(r"^(?:\d{4}\.\d+(?:v\d+)?|[A-Za-z\-]+/\d{7}(?:v\d+)?)$")
+ARXIV_DOI_PATTERN = re.compile(r"^10\.48550/arxiv\.(?P<id>.+)$", flags=re.I)
+ARXIV_API_URLS = (
+    "http://export.arxiv.org/api/query?id_list={id}",
+    "https://export.arxiv.org/api/query?id_list={id}",
+    "https://arxiv.org/api/query?id_list={id}",
+    "http://arxiv.org/api/query?id_list={id}",
+)
 
 
 class DOIError(Exception):
     pass
+
+
+@dataclass
+class ArxivMetadata:
+    arxiv_id: str
+    primary_class: Optional[str] = None
+    published_doi: Optional[str] = None
 
 
 def _is_http_url(value: str) -> bool:
@@ -84,28 +99,126 @@ def _parse_arxiv_id_string(value: str) -> Optional[str]:
     return None
 
 
-def _resolve_doi_from_arxiv_id(arxiv_id: str, timeout: int = 15) -> Optional[str]:
-    """Resolve DOI for a validated arXiv id via arXiv API."""
+def _parse_arxiv_id_from_doi_string(value: str) -> Optional[str]:
+    """Return an arXiv id if the DOI points to an arXiv preprint."""
+    try:
+        doi = _parse_doi_string(value)
+    except DOIError:
+        return None
+
+    match = ARXIV_DOI_PATTERN.match(doi)
+    if not match:
+        return None
+
+    candidate = match.group("id").strip()
+    if ARXIV_ID_PATTERN.match(candidate):
+        return candidate
+    return None
+
+
+def _canonical_arxiv_id(arxiv_id: str) -> str:
+    """Drop the version suffix from a validated arXiv id."""
+    return re.sub(r"v\d+$", "", arxiv_id)
+
+
+def _is_empty_arxiv_feed(text: str) -> bool:
+    """Return True if an Atom response does not contain an entry."""
+    return "<entry" not in text and "<opensearch:totalResults>0</opensearch:totalResults>" in text
+
+
+def _fetch_arxiv_entry(arxiv_id: str, timeout: int = 15) -> str:
+    """Fetch the raw arXiv Atom entry for an arXiv id."""
     parsed = _parse_arxiv_id_string(arxiv_id)
     if not parsed:
         raise ValueError("Invalid arXiv ID")
 
-    url = f"https://export.arxiv.org/api/query?id_list={parsed}"
-    resp = requests.get(url, timeout=timeout)
-    if resp.status_code != 200:
-        raise DOIError(f"arXiv query failed: HTTP {resp.status_code}")
+    headers = {
+        "User-Agent": (
+            "doi2bib3-python/1.0 "
+            "(https://github.com/archisman-panigrahi/doi2bib3)"
+        )
+    }
+    last_response: Optional[requests.Response] = None
+    last_exception: Optional[Exception] = None
 
-    text = resp.text
+    for template in ARXIV_API_URLS:
+        url = template.format(id=quote(parsed))
+        try:
+            resp = requests.get(url, headers=headers, timeout=timeout)
+        except Exception as exc:
+            last_exception = exc
+            continue
+
+        last_response = resp
+        if resp.status_code != 200:
+            continue
+        if _is_empty_arxiv_feed(resp.text):
+            continue
+        return resp.text
+
+    if last_response is not None:
+        if last_response.status_code == 200:
+            return last_response.text
+        raise DOIError(f"arXiv query failed: HTTP {last_response.status_code}")
+    if last_exception is not None:
+        raise DOIError(f"arXiv query failed: {last_exception}") from last_exception
+    raise DOIError("arXiv query failed: no API endpoint succeeded")
+
+
+def _extract_published_doi_from_arxiv_entry(text: str) -> Optional[str]:
+    """Extract the journal DOI recorded by arXiv, if present."""
     patterns = (
         r"<arxiv:doi\b[^>]*>([^<]+)</arxiv:doi>",
         r"<doi\b[^>]*>([^<]+)</doi>",
         r'href=["\']https?://(?:dx\.)?doi\.org/([^"\']+)["\']',
     )
     for pattern in patterns:
-        m = re.search(pattern, text)
-        if m:
-            return unquote(m.group(1).strip())
+        match = re.search(pattern, text)
+        if match:
+            return unquote(match.group(1).strip())
     return None
+
+
+def _extract_primary_class_from_arxiv_entry(text: str) -> Optional[str]:
+    """Extract the primary arXiv subject class from an Atom entry."""
+    match = re.search(
+        r"<arxiv:primary_category\b[^>]*term=[\"']([^\"']+)[\"']",
+        text,
+        flags=re.I,
+    )
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def _fetch_arxiv_metadata(arxiv_id: str, timeout: int = 15) -> ArxivMetadata:
+    """Fetch arXiv metadata used for DOI resolution and BibTeX enrichment."""
+    entry = _fetch_arxiv_entry(arxiv_id, timeout=timeout)
+    return ArxivMetadata(
+        arxiv_id=_canonical_arxiv_id(arxiv_id),
+        primary_class=_extract_primary_class_from_arxiv_entry(entry),
+        published_doi=_extract_published_doi_from_arxiv_entry(entry),
+    )
+
+
+def _resolve_doi_from_arxiv_id(arxiv_id: str, timeout: int = 15) -> Optional[str]:
+    """Resolve DOI for a validated arXiv id via arXiv API."""
+    return _fetch_arxiv_metadata(arxiv_id, timeout=timeout).published_doi
+
+
+def _resolve_arxiv_identifier(
+    arxiv_id: str, timeout: int = 15
+) -> tuple[str, ArxivMetadata]:
+    """Resolve an arXiv id to its journal DOI or arXiv DOI plus metadata."""
+    metadata = _fetch_arxiv_metadata(arxiv_id, timeout=timeout)
+    if metadata.published_doi:
+        return _parse_doi_string(metadata.published_doi), metadata
+
+    candidate = f"10.48550/arXiv.{metadata.arxiv_id}"
+    try:
+        return _parse_doi_string(candidate), metadata
+    except DOIError as exc:
+        raise DOIError(f"No DOI found for arXiv id: {arxiv_id}") from exc
 
 
 def _first_valid_doi(candidates: list[str]) -> Optional[str]:
@@ -223,15 +336,12 @@ def _resolve_identifier_to_doi(identifier: str, timeout: int = 15) -> str:
     """Resolve user identifier (DOI/arXiv/URL/title) to a DOI string."""
     arxiv_id = _parse_arxiv_id_string(identifier)
     if arxiv_id:
-        found_doi = _resolve_doi_from_arxiv_id(arxiv_id, timeout=timeout)
-        if found_doi:
-            return _parse_doi_string(found_doi)
-        arxiv_core = re.sub(r"v\d+$", "", arxiv_id)
-        candidate = f"10.48550/arXiv.{arxiv_core}"
-        try:
-            return _parse_doi_string(candidate)
-        except DOIError as exc:
-            raise DOIError(f"No DOI found for arXiv id: {arxiv_id}") from exc
+        doi, _ = _resolve_arxiv_identifier(arxiv_id, timeout=timeout)
+        return doi
+
+    arxiv_doi_id = _parse_arxiv_id_from_doi_string(identifier)
+    if arxiv_doi_id:
+        return _parse_doi_string(identifier)
 
     try:
         return _parse_doi_string(identifier)
@@ -240,6 +350,27 @@ def _resolve_identifier_to_doi(identifier: str, timeout: int = 15) -> str:
         if not found:
             raise DOIError(f"Crossref lookup failed for: {identifier}")
         return _parse_doi_string(found)
+
+
+def _resolve_identifier(
+    identifier: str, timeout: int = 15
+) -> tuple[str, Optional[ArxivMetadata]]:
+    """Resolve an identifier to a DOI plus optional arXiv metadata."""
+    arxiv_id = _parse_arxiv_id_string(identifier)
+    if arxiv_id:
+        doi, metadata = _resolve_arxiv_identifier(arxiv_id, timeout=timeout)
+        return doi, metadata
+
+    arxiv_doi_id = _parse_arxiv_id_from_doi_string(identifier)
+    if arxiv_doi_id:
+        metadata: Optional[ArxivMetadata]
+        try:
+            metadata = _fetch_arxiv_metadata(arxiv_doi_id, timeout=timeout)
+        except DOIError:
+            metadata = ArxivMetadata(arxiv_id=_canonical_arxiv_id(arxiv_doi_id))
+        return _parse_doi_string(identifier), metadata
+
+    return _resolve_identifier_to_doi(identifier, timeout=timeout), None
 
 
 def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
@@ -271,9 +402,19 @@ def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
 
 def fetch_bibtex(identifier: str, timeout: int = 15) -> str:
     """Public API: resolve identifier and return normalized BibTeX."""
-    doi = _resolve_identifier_to_doi(identifier, timeout=timeout)
+    doi, arxiv_metadata = _resolve_identifier(identifier, timeout=timeout)
     raw = _fetch_bibtex_for_doi(doi, timeout=timeout)
     try:
-        return normalize_bibtex(raw)
+        include_arxiv_fields = bool(
+            arxiv_metadata and not arxiv_metadata.published_doi
+        )
+        return normalize_bibtex(
+            raw,
+            arxiv_id=arxiv_metadata.arxiv_id if include_arxiv_fields else None,
+            primary_class=(
+                arxiv_metadata.primary_class if include_arxiv_fields else None
+            ),
+            include_arxiv_fields=include_arxiv_fields,
+        )
     except Exception:
         return raw
