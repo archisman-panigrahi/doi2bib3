@@ -1,3 +1,10 @@
+python-doi2bib3 (0.7.0-1) unstable; urgency=medium
+
+  * Improve arXiv metadata handling and fallback resolution
+  * Add BibTeX enrichment for unpublished arXiv preprints
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Thu, 19 Mar 2026 10:10:00 -0400
+
 python-doi2bib3 (0.6.0-1) unstable; urgency=medium
 
   * Rewrite to refactor code 
