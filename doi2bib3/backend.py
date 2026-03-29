@@ -16,8 +16,11 @@
 """Identifier resolution and network fetching for BibTeX retrieval."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Optional
 import re
+import time
 from urllib.parse import quote, unquote, urlparse
 
 import requests
@@ -34,6 +37,8 @@ ARXIV_API_URLS = (
     "https://arxiv.org/api/query?id_list={id}",
     "http://arxiv.org/api/query?id_list={id}",
 )
+RETRYABLE_HTTP_STATUS_CODES = {429, 500, 502, 503, 504}
+DEFAULT_HTTP_ATTEMPTS = 3
 
 
 class DOIError(Exception):
@@ -45,6 +50,57 @@ class ArxivMetadata:
     arxiv_id: str
     primary_class: Optional[str] = None
     published_doi: Optional[str] = None
+
+
+def _retry_delay_seconds(
+    resp: Optional[requests.Response], attempt: int, base_delay: float = 1.0
+) -> float:
+    """Return a retry delay honoring Retry-After when possible."""
+    if resp is not None:
+        retry_after = resp.headers.get("Retry-After")
+        if retry_after:
+            try:
+                return max(float(retry_after), 0.0)
+            except ValueError:
+                try:
+                    retry_at = parsedate_to_datetime(retry_after)
+                    if retry_at.tzinfo is None:
+                        retry_at = retry_at.replace(tzinfo=timezone.utc)
+                    delay = (retry_at - datetime.now(timezone.utc)).total_seconds()
+                    return max(delay, 0.0)
+                except Exception:
+                    pass
+    return base_delay * (2**attempt)
+
+
+def _request_with_retries(
+    url: str,
+    headers: Optional[dict[str, str]] = None,
+    timeout: int = 15,
+    attempts: int = DEFAULT_HTTP_ATTEMPTS,
+) -> requests.Response:
+    """Perform GET with retries for transient failures like HTTP 429."""
+    last_exception: Optional[Exception] = None
+
+    for attempt in range(attempts):
+        try:
+            resp = requests.get(url, headers=headers, timeout=timeout)
+        except Exception as exc:
+            last_exception = exc
+            if attempt + 1 == attempts:
+                raise
+            time.sleep(_retry_delay_seconds(None, attempt))
+            continue
+
+        if resp.status_code not in RETRYABLE_HTTP_STATUS_CODES:
+            return resp
+        if attempt + 1 == attempts:
+            return resp
+        time.sleep(_retry_delay_seconds(resp, attempt))
+
+    if last_exception is not None:
+        raise last_exception
+    raise DOIError("HTTP request failed without a response")
 
 
 def _is_http_url(value: str) -> bool:
@@ -144,7 +200,7 @@ def _fetch_arxiv_entry(arxiv_id: str, timeout: int = 15) -> str:
     for template in ARXIV_API_URLS:
         url = template.format(id=quote(parsed))
         try:
-            resp = requests.get(url, headers=headers, timeout=timeout)
+            resp = _request_with_retries(url, headers=headers, timeout=timeout)
         except Exception as exc:
             last_exception = exc
             continue
@@ -210,7 +266,10 @@ def _resolve_arxiv_identifier(
     arxiv_id: str, timeout: int = 15
 ) -> tuple[str, ArxivMetadata]:
     """Resolve an arXiv id to its journal DOI or arXiv DOI plus metadata."""
-    metadata = _fetch_arxiv_metadata(arxiv_id, timeout=timeout)
+    try:
+        metadata = _fetch_arxiv_metadata(arxiv_id, timeout=timeout)
+    except DOIError:
+        metadata = ArxivMetadata(arxiv_id=_canonical_arxiv_id(arxiv_id))
     if metadata.published_doi:
         return _parse_doi_string(metadata.published_doi), metadata
 
@@ -265,7 +324,9 @@ def _fetch_html_for_doi_extraction(url: str, timeout: int = 10) -> Optional[str]
     )
 
     try:
-        resp = requests.get(url, headers={"User-Agent": ua_bot}, timeout=timeout)
+        resp = _request_with_retries(
+            url, headers={"User-Agent": ua_bot}, timeout=timeout
+        )
     except Exception:
         return None
 
@@ -273,7 +334,7 @@ def _fetch_html_for_doi_extraction(url: str, timeout: int = 10) -> Optional[str]
         return resp.text
 
     try:
-        resp = requests.get(
+        resp = _request_with_retries(
             url,
             headers={"User-Agent": ua_browser, "Referer": url},
             timeout=timeout,
@@ -312,7 +373,7 @@ def _search_doi_via_crossref(query: str, timeout: int = 15) -> Optional[str]:
 
     try:
         url = f"https://api.crossref.org/works?query.bibliographic={quote(q)}&rows=5"
-        resp = requests.get(url, headers=headers, timeout=timeout)
+        resp = _request_with_retries(url, headers=headers, timeout=timeout)
         if resp.status_code != 200:
             return None
         items = resp.json().get("message", {}).get("items", [])
@@ -381,22 +442,39 @@ def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
     }
 
     url = f"https://doi.org/{doi}"
-    resp = requests.get(url, headers=headers, timeout=timeout)
-    if resp.status_code == 200:
+    resp: Optional[requests.Response]
+    resp2: Optional[requests.Response]
+
+    doi_error: Optional[str] = None
+    try:
+        resp = _request_with_retries(url, headers=headers, timeout=timeout)
+    except Exception as exc:
+        resp = None
+        doi_error = f"request failed: {exc}"
+    if resp is not None and resp.status_code == 200:
         return _decode_response_text(resp)
+    if doi_error is None and resp is not None:
+        doi_error = f"HTTP {resp.status_code}"
 
     doi_quoted = quote(doi, safe="")
     xurl = (
         "https://api.crossref.org/works/"
         f"{doi_quoted}/transform/application/x-bibtex"
     )
-    resp2 = requests.get(xurl, headers=headers, timeout=timeout)
-    if resp2.status_code == 200:
+    crossref_error: Optional[str] = None
+    try:
+        resp2 = _request_with_retries(xurl, headers=headers, timeout=timeout)
+    except Exception as exc:
+        resp2 = None
+        crossref_error = f"request failed: {exc}"
+    if resp2 is not None and resp2.status_code == 200:
         return _decode_response_text(resp2)
+    if crossref_error is None and resp2 is not None:
+        crossref_error = f"HTTP {resp2.status_code}"
 
     raise DOIError(
-        f"Failed to fetch DOI {doi}: doi.org HTTP {resp.status_code}, "
-        f"crossref HTTP {resp2.status_code}"
+        f"Failed to fetch DOI {doi}: doi.org {doi_error}, "
+        f"crossref {crossref_error}"
     )
 
 
