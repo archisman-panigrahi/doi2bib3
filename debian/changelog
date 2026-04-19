@@ -1,3 +1,10 @@
+python-doi2bib3 (0.8.0-1) unstable; urgency=medium
+
+  * Fix BibTeX normalization for entries with unbraced month macros
+    (e.g. month=july), avoiding fallback to raw one-line output.
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Sun, 19 Apr 2026 15:06:03 -0400
+
 python-doi2bib3 (0.7.0-1) unstable; urgency=medium
 
   * Improve arXiv metadata handling and fallback resolution
