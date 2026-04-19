@@ -22,6 +22,7 @@ import re
 import urllib.parse
 
 import bibtexparser
+from bibtexparser.bparser import BibTexParser
 import requests
 
 SPECIAL_CHARS = {
@@ -38,6 +39,32 @@ SPECIAL_CHARS = {
     "\u00c4": "\\\"{A}",
     "\u00dc": "\\\"{U}",
 }
+
+_MONTH_STRING_DEFINITIONS = """@string{jan = \"January\"}
+@string{january = \"January\"}
+@string{feb = \"February\"}
+@string{february = \"February\"}
+@string{mar = \"March\"}
+@string{march = \"March\"}
+@string{apr = \"April\"}
+@string{april = \"April\"}
+@string{may = \"May\"}
+@string{jun = \"June\"}
+@string{june = \"June\"}
+@string{jul = \"July\"}
+@string{july = \"July\"}
+@string{aug = \"August\"}
+@string{august = \"August\"}
+@string{sep = \"September\"}
+@string{sept = \"September\"}
+@string{september = \"September\"}
+@string{oct = \"October\"}
+@string{october = \"October\"}
+@string{nov = \"November\"}
+@string{november = \"November\"}
+@string{dec = \"December\"}
+@string{december = \"December\"}
+"""
 
 VAR_RE = re.compile(r"(\\{)(\\var[A-Z]?[a-z]*)(\\})")
 
@@ -143,7 +170,15 @@ def normalize_bibtex(
     primary_class: Optional[str] = None,
     include_arxiv_fields: bool = False,
 ) -> str:
-    bib_db = bibtexparser.loads(bib_str)
+    # Some providers return month macros like month=july without defining
+    # them, which makes bibtexparser raise UndefinedString.
+    parser = BibTexParser(common_strings=False)
+    bib_db = bibtexparser.loads(
+        _MONTH_STRING_DEFINITIONS + "\n" + bib_str,
+        parser=parser,
+    )
+    # Keep resolved values in entries while omitting helper @string blocks.
+    bib_db.strings = {}
     for entry in bib_db.entries:
         if "ID" in entry:
             entry["ID"] = entry["ID"].replace("_", "")

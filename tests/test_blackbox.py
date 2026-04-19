@@ -67,6 +67,24 @@ import pytest
 
 """,
         ),
+    (
+        "http://dx.doi.org/10.1103/physrevb.110.045147",
+        r"""@article{Nazaryan_nonlocal_2024,
+ author = {Nazaryan, Khachatur G. and Levitov, Leonid},
+ issn = {2469-9969},
+ journal = {Phys. Rev. B},
+ month = {July},
+ number = {4},
+ pages = {045147},
+ publisher = {American Physical Society (APS)},
+ title = {{Nonlocal} conductivity, continued fractions, and current vortices in electron fluids},
+ url = {http://dx.doi.org/10.1103/physrevb.110.045147},
+ volume = {110},
+ year = {2024}
+}
+
+""",
+    ),
         (
             "arXiv:2411.08091",
             r"""@article{Panigrahi_non-fermi_2025,
