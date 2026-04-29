@@ -267,7 +267,7 @@ For each entry:
 9. Special character encoding:
 - apply selected unicode -> LaTeX substitutions in
   - `title`
-  - `journal`
+  - `author`
   - `booktitle`
 - Implemented by `encode_special_chars()` called from `normalize_bibtex()`
 

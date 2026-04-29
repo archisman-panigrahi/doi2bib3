@@ -119,7 +119,7 @@ def test_article_output(capfd, input_value, expected_output) -> None:
         (
             '"Projected Topological Branes"',
             r"""@article{Panigrahi_projected_2022,
- author = {Panigrahi, Archisman and Juričić, Vladimir and Roy, Bitan},
+ author = {Panigrahi, Archisman and Juri\v{c}i\'{c}, Vladimir and Roy, Bitan},
  issn = {2399-3650},
  journal = {Commun. Phys.},
  month = {September},
