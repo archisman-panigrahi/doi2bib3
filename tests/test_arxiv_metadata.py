@@ -73,6 +73,50 @@ def test_fetch_bibtex_adds_arxiv_fields_for_unpublished_arxiv_url(monkeypatch):
 
 
 @pytest.mark.imported
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "arxiv.org/abs/2502.01918",
+        "www.arxiv.org/abs/2502.01918",
+        "arxiv.org/pdf/2502.01918.pdf",
+    ],
+)
+def test_fetch_bibtex_accepts_schemeless_arxiv_urls(monkeypatch, identifier):
+    called_urls = []
+    arxiv_id = "2502.01918"
+    responses = {
+        f"http://export.arxiv.org/api/query?id_list={arxiv_id}": FakeResponse(
+            text=f"""
+            <feed xmlns:arxiv="http://arxiv.org/schemas/atom">
+              <entry>
+                <id>http://arxiv.org/abs/{arxiv_id}v1</id>
+                <arxiv:primary_category term="cond-mat.mtrl-sci" />
+              </entry>
+            </feed>
+            """
+        ),
+        f"https://doi.org/10.48550/arXiv.{arxiv_id}": FakeResponse(
+            text="""
+            @misc{sample,
+             author = {Doe, Jane},
+             title = {Schemeless arxiv url},
+             year = {2025},
+             url = {https://doi.org/10.48550/arXiv.2502.01918}
+            }
+            """
+        ),
+    }
+    _install_fake_get(monkeypatch, responses, called_urls)
+
+    bibtex = backend.fetch_bibtex(identifier)
+
+    assert "archivePrefix = {arXiv}" in bibtex
+    assert f"eprint = {{{arxiv_id}}}" in bibtex
+    assert "primaryClass = {cond-mat.mtrl-sci}" in bibtex
+    assert called_urls[0] == f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
+
+
+@pytest.mark.imported
 def test_fetch_bibtex_adds_arxiv_fields_for_unpublished_arxiv_doi_url(monkeypatch):
     called_urls = []
     arxiv_id = "2501.54321"

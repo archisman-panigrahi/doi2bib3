@@ -81,15 +81,18 @@ def _parse_arxiv_id_string(value: str) -> Optional[str]:
     candidate = value.strip()
     if candidate.lower().startswith("arxiv:"):
         candidate = candidate.split(":", 1)[1].strip()
-    elif _is_http_url(candidate):
+    elif _is_http_url(candidate) or candidate.lower().startswith(
+        ("arxiv.org/", "www.arxiv.org/")
+    ):
         try:
+            if candidate.lower().startswith(("arxiv.org/", "www.arxiv.org/")):
+                candidate = f"https://{candidate}"
             parsed = urlparse(candidate)
         except Exception:
             return None
-        if "arxiv.org" not in parsed.netloc.lower():
+        if parsed.netloc.lower() not in ("arxiv.org", "www.arxiv.org"):
             return None
-        path = parsed.path.lstrip("/")
-        m = re.match(r"^(?:abs|pdf|html)/(?P<id>.+)$", path)
+        m = re.match(r"^(?:abs|pdf|html)/(?P<id>.+)$", parsed.path.lstrip("/"))
         if not m:
             return None
         candidate = re.sub(r"\.pdf$", "", m.group("id"), flags=re.I)

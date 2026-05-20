@@ -78,6 +78,7 @@ Input is considered arXiv if it matches one of these forms:
   - `https://arxiv.org/abs/...`
   - `https://arxiv.org/pdf/...pdf`
   - `https://arxiv.org/html/...`
+  - scheme-less forms like `arxiv.org/abs/...` or `arxiv.org/pdf/...pdf`
 
 Implementation:
 
