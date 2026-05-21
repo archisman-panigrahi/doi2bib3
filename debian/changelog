@@ -1,3 +1,9 @@
+python-doi2bib3 (1.0.0-1) unstable; urgency=medium
+
+  * Added support for sciencedirect journal links
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Thu, 21 May 2026 10:56:27 -0400
+
 python-doi2bib3 (0.9.1-1) unstable; urgency=medium
 
   * Recognize scheme-less arXiv abs/pdf URLs such as arxiv.org/abs/... and
