@@ -14,6 +14,10 @@ Key behaviors
 - For non-arXiv inputs: attempts DOI normalization, content negotiation at
   doi.org, Crossref transform, and as a last resort a Crossref bibliographic
   search.
+- Supports publisher landing pages, including DOI links embedded in URL/HTML
+  metadata and ScienceDirect article links whose URL contains an Elsevier PII.
+- Normalizes BibTeX output, including bundled APS/Nature journal abbreviation
+  mappings and APS article-number enrichment when Crossref metadata provides it.
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
 - Diagram version of the pipeline: [`docs/ALGORITHM_VISUALS.md`](docs/ALGORITHM_VISUALS.md)
 
@@ -102,6 +106,13 @@ Name of the paper (includes fuzzy search):
 doi2bib3 "Projected Topological Branes"
 ```
 
+Publisher/article pages:
+
+```bash
+doi2bib3 https://www.pnas.org/doi/10.1073/pnas.2305943120
+doi2bib3 https://www.sciencedirect.com/science/article/pii/S0003491605000096?via%3Dihub
+```
+
 Save to a file:
 
 ```bash
@@ -122,6 +133,9 @@ Behavior:
 
 - Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
 - Resolves input to a DOI using arXiv and/or Crossref when needed.
+- Resolves ScienceDirect article URLs by extracting the Elsevier PII and
+  querying Elsevier article metadata before falling back to generic URL/HTML
+  DOI extraction.
 - Fetches BibTeX via DOI content negotiation (with Crossref fallback).
 - Returns normalized BibTeX output (same formatting as CLI output).
 - Full step-by-step algorithm: [`docs/ALGORITHM.md`](docs/ALGORITHM.md)

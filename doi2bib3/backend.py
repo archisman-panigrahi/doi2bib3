@@ -22,6 +22,7 @@ from urllib.parse import quote, unquote, urlparse
 
 import requests
 
+from .constants import USER_AGENT
 from .normalize import normalize_bibtex
 
 DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$")
@@ -72,6 +73,11 @@ def _parse_doi_string(doi_input: str) -> str:
     if DOI_PATTERN.match(candidate):
         return candidate
     raise DOIError(f"Invalid DOI: {doi_input}")
+
+
+def _clean_doi_candidate(candidate: str) -> str:
+    """Remove common delimiters accidentally captured around DOI text."""
+    return unquote(candidate.strip().replace("\\/", "/")).rstrip(".,;:)]}'\"")
 
 
 def _parse_arxiv_id_string(value: str) -> Optional[str]:
@@ -135,12 +141,7 @@ def _fetch_arxiv_entry(arxiv_id: str, timeout: int = 15) -> str:
     if not parsed:
         raise ValueError("Invalid arXiv ID")
 
-    headers = {
-        "User-Agent": (
-            "doi2bib3-python/1.0 "
-            "(https://github.com/archisman-panigrahi/doi2bib3)"
-        )
-    }
+    headers = {"User-Agent": USER_AGENT}
     last_response: Optional[requests.Response] = None
     last_exception: Optional[Exception] = None
 
@@ -227,7 +228,7 @@ def _resolve_arxiv_identifier(
 def _first_valid_doi(candidates: list[str]) -> Optional[str]:
     for candidate in candidates:
         try:
-            return _parse_doi_string(candidate)
+            return _parse_doi_string(_clean_doi_candidate(candidate))
         except DOIError:
             continue
     return None
@@ -260,15 +261,49 @@ def _doi_candidates_from_html(html: str) -> list[str]:
     return candidates
 
 
+def _extract_doi_from_sciencedirect_url(url: str, timeout: int = 10) -> Optional[str]:
+    """Resolve a ScienceDirect article URL through its Elsevier PII."""
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return None
+
+    if parsed.netloc.lower() not in ("sciencedirect.com", "www.sciencedirect.com"):
+        return None
+
+    match = re.search(r"(?:^|/)pii/([^/?#]+)", parsed.path)
+    if not match:
+        return None
+
+    pii = unquote(match.group(1)).strip()
+    if not pii:
+        return None
+
+    url = f"https://api.elsevier.com/content/article/pii/{quote(pii, safe='')}"
+    headers = {
+        "Accept": "application/xml, text/xml;q=0.9, application/json;q=0.8",
+        "User-Agent": USER_AGENT,
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=timeout)
+    except Exception:
+        return None
+
+    if resp.status_code != 200:
+        return None
+
+    text = _decode_response_text(resp).replace("\\/", "/")
+    return _first_valid_doi(_doi_candidates_from_html(text))
+
+
 def _fetch_html_for_doi_extraction(url: str, timeout: int = 10) -> Optional[str]:
-    ua_bot = "doi2bib3-python/1.0"
     ua_browser = (
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
     )
 
     try:
-        resp = requests.get(url, headers={"User-Agent": ua_bot}, timeout=timeout)
+        resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout)
     except Exception:
         return None
 
@@ -295,6 +330,10 @@ def _extract_doi_from_publisher_url(url: str, timeout: int = 10) -> Optional[str
     if doi:
         return doi
 
+    doi = _extract_doi_from_sciencedirect_url(url, timeout=timeout)
+    if doi:
+        return doi
+
     html = _fetch_html_for_doi_extraction(url, timeout=timeout)
     if not html:
         return None
@@ -307,7 +346,7 @@ def _search_doi_via_crossref(query: str, timeout: int = 15) -> Optional[str]:
     if not q:
         return None
 
-    headers = {"User-Agent": "doi2bib-python/1.0"}
+    headers = {"User-Agent": USER_AGENT}
     if _is_http_url(q):
         doi = _extract_doi_from_publisher_url(q, timeout=timeout)
         if doi:
@@ -380,7 +419,7 @@ def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
     """Query doi.org for BibTeX and fallback to Crossref transform endpoint."""
     headers = {
         "Accept": "application/x-bibtex; charset=utf-8",
-        "User-Agent": "doi2bib-python/1.0",
+        "User-Agent": USER_AGENT,
     }
 
     url = f"https://doi.org/{doi}"

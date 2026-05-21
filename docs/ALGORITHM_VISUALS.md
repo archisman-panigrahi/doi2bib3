@@ -43,7 +43,10 @@ flowchart TD
 
     M --> N{Input is URL?}
     N -->|Yes| O[_extract_doi_from_publisher_url]
-    O --> P{DOI found in path/html?}
+    O --> U{ScienceDirect PII URL?}
+    U -->|Yes| V[Query Elsevier article metadata]
+    U -->|No| P{DOI found in path/html?}
+    V --> P
     P -->|Yes| Q[_first_valid_doi]
     P -->|No| R[Crossref works query rows=5]
     N -->|No| R
@@ -99,7 +102,7 @@ flowchart TD
 - Resolve identifier: `doi2bib3/backend.py` -> `_resolve_identifier()`, `_resolve_identifier_to_doi()`
 - arXiv parse/query: `doi2bib3/backend.py` -> `_parse_arxiv_id_string()`, `_parse_arxiv_id_from_doi_string()`, `_fetch_arxiv_metadata()`, `_resolve_arxiv_identifier()`
 - Crossref search: `doi2bib3/backend.py` -> `_search_doi_via_crossref()`
-- URL DOI extraction: `doi2bib3/backend.py` -> `_extract_doi_from_publisher_url()`
+- URL DOI extraction: `doi2bib3/backend.py` -> `_extract_doi_from_publisher_url()`, `_extract_doi_from_sciencedirect_url()`
 - Fetch raw BibTeX: `doi2bib3/backend.py` -> `_fetch_bibtex_for_doi()`
 - Normalize BibTeX: `doi2bib3/normalize.py` -> `normalize_bibtex()`
 - Write output file: `doi2bib3/io.py` -> `save_bibtex_to_file()`

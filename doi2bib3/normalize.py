@@ -26,6 +26,8 @@ import bibtexparser
 from bibtexparser.bparser import BibTexParser
 import requests
 
+from .constants import USER_AGENT
+
 LATEX_DIACRITIC_COMMANDS = {
     "\u0300": "\\`",
     "\u0301": "\\'",
@@ -231,7 +233,7 @@ def fetch_article_number_from_crossref(doi: str, timeout: int = 10) -> Optional[
             doi_clean = doi_clean[4:].strip()
 
         url = f'https://api.crossref.org/works/{urllib.parse.quote(doi_clean, safe="")}'
-        resp = requests.get(url, timeout=timeout)
+        resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout)
 
         if resp.status_code == 200:
             data = resp.json()

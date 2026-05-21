@@ -92,7 +92,7 @@ Implementation:
   - `https://export.arxiv.org/api/query?id_list=<id>`
   - `https://arxiv.org/api/query?id_list=<id>`
   - `http://arxiv.org/api/query?id_list=<id>`
-- sends a `User-Agent` header for the arXiv request
+- sends the shared doi2bib3 `User-Agent` header for the arXiv request
 - implemented by `_fetch_arxiv_entry()` / `_fetch_arxiv_metadata()` in `doi2bib3/backend.py`
 
 3. Extract metadata from the arXiv Atom entry:
@@ -148,12 +148,19 @@ Used for publisher URLs and free-text (including paper titles).
 1. Try DOI pattern from URL path directly.
 - `_doi_candidates_from_url_path()` + `_first_valid_doi()` in `doi2bib3/backend.py`
 
-2. If none, fetch page HTML.
+2. If the URL is a ScienceDirect `/science/article/pii/...` link:
+- extract the Elsevier PII from the URL path
+- query `https://api.elsevier.com/content/article/pii/<pii>`
+- scan the returned metadata with the same DOI candidate extractor used for
+  publisher HTML
+- implemented by `_extract_doi_from_sciencedirect_url()` in `doi2bib3/backend.py`
+
+3. If none, fetch page HTML.
 - first request with bot user-agent
 - retry once with browser user-agent + `Referer` when needed
 - `_fetch_html_for_doi_extraction()` in `doi2bib3/backend.py`
 
-3. Scan HTML for DOI candidates in this order:
+4. Scan HTML for DOI candidates in this order:
 - `meta[name=citation_doi]`
 - `meta[name=dc.identifier|dcterms.identifier]`
 - links to `doi.org` / `dx.doi.org`
@@ -161,7 +168,7 @@ Used for publisher URLs and free-text (including paper titles).
 - generic DOI-like text pattern
 - `_doi_candidates_from_html()` in `doi2bib3/backend.py`
 
-4. First valid parsed DOI wins.
+5. First valid parsed DOI wins.
 - `_first_valid_doi()` in `doi2bib3/backend.py`
 - orchestrated by `_extract_doi_from_publisher_url()`
 
@@ -191,7 +198,7 @@ Given resolved DOI:
 
 1. Request `https://doi.org/<doi>` with headers:
 - `Accept: application/x-bibtex; charset=utf-8`
-- `User-Agent: doi2bib-python/1.0`
+- `User-Agent: doi2bib3-python/1.0 (https://github.com/archisman-panigrahi/doi2bib3)`
 - Implemented in `_fetch_bibtex_for_doi()` (`doi2bib3/backend.py`)
 
 2. If HTTP 200:
@@ -260,6 +267,12 @@ For each entry:
 - Mapping load: `_load_journal_replacements()` at import time
 - Abbreviation lookup: `abbreviate_journal_name()`
 - Applied inside `normalize_bibtex()`
+
+Publisher-specific note:
+- ScienceDirect/Elsevier handling is part of identifier resolution, before raw
+  BibTeX fetch, because ScienceDirect URLs often expose a PII instead of a DOI.
+- APS article-number enrichment and APS/Nature journal abbreviations are part of
+  BibTeX normalization, after raw BibTeX has already been fetched.
 
 8. Month cleanup:
 - strip outer braces `{January}` -> `January`
