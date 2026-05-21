@@ -236,9 +236,17 @@ def _first_valid_doi(candidates: list[str]) -> Optional[str]:
 
 def _doi_candidates_from_url_path(url: str) -> list[str]:
     try:
-        path = unquote(urlparse(url).path or "")
+        parsed = urlparse(url)
+        path = unquote(parsed.path or "")
     except Exception:
         return []
+
+    if (
+        parsed.netloc.lower() in ("iopscience.iop.org", "www.iopscience.iop.org")
+        and path.lower().endswith("/pdf")
+    ):
+        path = path.rsplit("/", 1)[0]
+
     m = DOI_IN_TEXT_PATTERN.search(path)
     return [m.group(0)] if m else []
 

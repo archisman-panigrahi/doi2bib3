@@ -146,6 +146,8 @@ Used for publisher URLs and free-text (including paper titles).
 #### URL heuristic phase (if input looks like URL)
 
 1. Try DOI pattern from URL path directly.
+- For IOP Science URL paths ending in `/pdf`, strip that view suffix before
+  DOI matching so the article DOI is used.
 - `_doi_candidates_from_url_path()` + `_first_valid_doi()` in `doi2bib3/backend.py`
 
 2. If the URL is a ScienceDirect `/science/article/pii/...` link:

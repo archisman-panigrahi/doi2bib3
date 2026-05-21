@@ -76,3 +76,37 @@ def test_sciencedirect_url_fetches_bibtex_for_resolved_doi(monkeypatch):
 
     assert f"https://doi.org/{doi}" in bibtex
     assert f"https://doi.org/{doi}" in called_urls
+
+
+@pytest.mark.imported
+def test_iopscience_pdf_url_resolves_doi_without_pdf_suffix():
+    doi = "10.1088/1402-4896/ad995f"
+    article_url = f"https://iopscience.iop.org/article/{doi}/pdf"
+
+    assert backend._resolve_identifier_to_doi(article_url) == doi
+
+
+@pytest.mark.imported
+def test_iopscience_pdf_url_fetches_bibtex_for_resolved_doi(monkeypatch):
+    called_urls = []
+    doi = "10.1088/1402-4896/ad995f"
+    article_url = f"https://iopscience.iop.org/article/{doi}/pdf"
+    responses = {
+        f"https://doi.org/{doi}": FakeResponse(
+            text=f"""
+            @article{{Singh_analysis_2024,
+             author = {{Singh, Anmol and Anand, R K}},
+             title = {{Analysis on the internal structure of shock wave-front}},
+             year = {{2024}},
+             url = {{https://doi.org/{doi}}}
+            }}
+            """
+        ),
+    }
+    _install_fake_get(monkeypatch, responses, called_urls)
+
+    bibtex = backend.fetch_bibtex(article_url)
+
+    assert f"https://doi.org/{doi}" in bibtex
+    assert f"https://doi.org/{doi}" in called_urls
+    assert f"https://doi.org/{doi}/pdf" not in called_urls

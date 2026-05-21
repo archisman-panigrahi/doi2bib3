@@ -15,7 +15,8 @@ Key behaviors
   doi.org, Crossref transform, and as a last resort a Crossref bibliographic
   search.
 - Supports publisher landing pages, including DOI links embedded in URL/HTML
-  metadata and ScienceDirect article links whose URL contains an Elsevier PII.
+  metadata, IOP Science PDF article links, and ScienceDirect article links
+  whose URL contains an Elsevier PII.
 - Normalizes BibTeX output, including bundled APS/Nature journal abbreviation
   mappings and APS article-number enrichment when Crossref metadata provides it.
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
@@ -106,10 +107,11 @@ Name of the paper (includes fuzzy search):
 doi2bib3 "Projected Topological Branes"
 ```
 
-Publisher/article pages (Supports APS, AMS, ACS, Nature, PNAS, and ScienceDirect journals):
+Publisher/article pages (Supports APS, AMS, ACS, IOP Science, Nature, PNAS, and ScienceDirect journals):
 
 ```bash
 doi2bib3 https://www.pnas.org/doi/10.1073/pnas.2305943120
+doi2bib3 https://iopscience.iop.org/article/10.1088/1402-4896/ad995f/pdf
 doi2bib3 https://www.sciencedirect.com/science/article/pii/S0003491605000096?via%3Dihub
 ```
 
@@ -133,6 +135,8 @@ Behavior:
 
 - Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
 - Resolves input to a DOI using arXiv and/or Crossref when needed.
+- Resolves IOP Science article PDF URLs by removing the trailing `/pdf` view
+  suffix before DOI validation.
 - Resolves ScienceDirect article URLs by extracting the Elsevier PII and
   querying Elsevier article metadata before falling back to generic URL/HTML
   DOI extraction.
