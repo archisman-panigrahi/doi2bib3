@@ -17,7 +17,7 @@ Key behaviors
 - Supports publisher landing pages, including DOI links embedded in URL/HTML
   metadata, IOP Science PDF article links, and ScienceDirect article links
   whose URL contains an Elsevier PII.
-- Normalizes BibTeX output, including bundled APS/Nature journal abbreviation
+- Normalizes BibTeX output, including bundled APS/Nature/IOP journal abbreviation
   mappings and APS article-number enrichment when Crossref metadata provides it.
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
 - Diagram version of the pipeline: [`docs/ALGORITHM_VISUALS.md`](docs/ALGORITHM_VISUALS.md)

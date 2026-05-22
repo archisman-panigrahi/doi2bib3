@@ -124,7 +124,11 @@ def _load_journal_replacements():
     replacements = {}
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    for json_file in ["APS_replacement.json", "Nature_replacement.json"]:
+    for json_file in [
+        "APS_replacement.json",
+        "Nature_replacement.json",
+        "IOP_replacement.json",
+    ]:
         file_path = os.path.join(current_dir, json_file)
         try:
             with open(file_path, "r", encoding="utf-8") as f:

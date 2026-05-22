@@ -266,6 +266,7 @@ For each entry:
 - apply abbreviation mapping from bundled JSON dictionaries:
   - `APS_replacement.json`
   - `Nature_replacement.json`
+  - `IOP_replacement.json`
 - Mapping load: `_load_journal_replacements()` at import time
 - Abbreviation lookup: `abbreviate_journal_name()`
 - Applied inside `normalize_bibtex()`
@@ -273,7 +274,7 @@ For each entry:
 Publisher-specific note:
 - ScienceDirect/Elsevier handling is part of identifier resolution, before raw
   BibTeX fetch, because ScienceDirect URLs often expose a PII instead of a DOI.
-- APS article-number enrichment and APS/Nature journal abbreviations are part of
+- APS article-number enrichment and APS/Nature/IOP journal abbreviations are part of
   BibTeX normalization, after raw BibTeX has already been fetched.
 
 8. Month cleanup:
