@@ -110,3 +110,45 @@ def test_iopscience_pdf_url_fetches_bibtex_for_resolved_doi(monkeypatch):
     assert f"https://doi.org/{doi}" in bibtex
     assert f"https://doi.org/{doi}" in called_urls
     assert f"https://doi.org/{doi}/pdf" not in called_urls
+
+
+@pytest.mark.imported
+def test_scipost_article_url_resolves_doi_from_path():
+    doi = "10.21468/SciPostPhys.20.3.082"
+    article_url = "https://www.scipost.org/SciPostPhys.20.3.082/"
+
+    assert backend._resolve_identifier_to_doi(article_url) == doi
+
+
+@pytest.mark.imported
+def test_scipost_pdf_url_resolves_doi_without_pdf_suffix():
+    doi = "10.21468/SciPostPhys.20.3.082"
+    article_url = "https://www.scipost.org/SciPostPhys.20.3.082/pdf"
+
+    assert backend._resolve_identifier_to_doi(article_url) == doi
+
+
+@pytest.mark.imported
+def test_scipost_pdf_url_fetches_bibtex_for_resolved_doi(monkeypatch):
+    called_urls = []
+    doi = "10.21468/SciPostPhys.20.3.082"
+    article_url = "https://www.scipost.org/SciPostPhys.20.3.082/pdf"
+    responses = {
+        f"https://doi.org/{doi}": FakeResponse(
+            text=f"""
+            @article{{Example_2026,
+             author = {{Example, A.}},
+             title = {{SciPost example}},
+             year = {{2026}},
+             url = {{https://doi.org/{doi}}}
+            }}
+            """
+        ),
+    }
+    _install_fake_get(monkeypatch, responses, called_urls)
+
+    bibtex = backend.fetch_bibtex(article_url)
+
+    assert f"https://doi.org/{doi}" in bibtex
+    assert f"https://doi.org/{doi}" in called_urls
+    assert f"https://doi.org/{doi}/pdf" not in called_urls

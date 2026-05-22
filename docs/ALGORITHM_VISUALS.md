@@ -43,8 +43,8 @@ flowchart TD
 
     M --> N{Input is URL?}
     N -->|Yes| O[_extract_doi_from_publisher_url]
-    O --> W{IOP URL path ends /pdf?}
-    W -->|Yes| X[Strip trailing /pdf before DOI path scan]
+    O --> W{IOP /pdf or SciPost article path?}
+    W -->|Yes| X[Strip view suffix or map SciPost path to DOI]
     W -->|No| U{ScienceDirect PII URL?}
     X --> P
     U -->|Yes| V[Query Elsevier article metadata]

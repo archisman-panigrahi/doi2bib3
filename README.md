@@ -101,11 +101,13 @@ Name of the paper (includes fuzzy search):
 doi2bib3 "Projected Topological Branes"
 ```
 
-Publisher/article pages (Supports APS, AMS, ACS, IOP Science, Nature, PNAS, and ScienceDirect journals):
+Publisher/article pages (Supports APS, AMS, ACS, IOP Science, Nature, PNAS, SciPost, and ScienceDirect journals):
 
 ```bash
 doi2bib3 https://www.pnas.org/doi/10.1073/pnas.2305943120
 doi2bib3 https://iopscience.iop.org/article/10.1088/1402-4896/ad995f/pdf
+doi2bib3 https://www.scipost.org/SciPostPhys.20.3.082/
+doi2bib3 https://www.scipost.org/SciPostPhys.20.3.082/pdf
 doi2bib3 https://www.sciencedirect.com/science/article/pii/S0003491605000096?via%3Dihub
 ```
 
@@ -119,7 +121,7 @@ Note: If the tool is not installed, you can run `python scripts/doi2bib3 https:/
 
 ## Supported journal groups
 
-`doi2bib3` directly supports many APS, AMS, ACS, Nature, PNAS, ScienceDirect and IOP groups of journals.
+`doi2bib3` directly supports many APS, AMS, ACS, Nature, PNAS, SciPost, ScienceDirect and IOP groups of journals.
 For other journals, the DOI link works, but the paper's URL would not work..
 
 ## Programmatic usage

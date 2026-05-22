@@ -148,6 +148,9 @@ Used for publisher URLs and free-text (including paper titles).
 1. Try DOI pattern from URL path directly.
 - For IOP Science URL paths ending in `/pdf`, strip that view suffix before
   DOI matching so the article DOI is used.
+- For SciPost article paths like `/SciPostPhys.20.3.082` or
+  `/SciPostPhys.20.3.082/pdf`, convert the path to its DOI form
+  `10.21468/SciPostPhys.20.3.082`.
 - `_doi_candidates_from_url_path()` + `_first_valid_doi()` in `doi2bib3/backend.py`
 
 2. If the URL is a ScienceDirect `/science/article/pii/...` link:

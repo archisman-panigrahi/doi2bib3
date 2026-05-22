@@ -241,11 +241,19 @@ def _doi_candidates_from_url_path(url: str) -> list[str]:
     except Exception:
         return []
 
+    netloc = parsed.netloc.lower()
     if (
-        parsed.netloc.lower() in ("iopscience.iop.org", "www.iopscience.iop.org")
+        netloc in ("iopscience.iop.org", "www.iopscience.iop.org")
         and path.lower().endswith("/pdf")
     ):
         path = path.rsplit("/", 1)[0]
+
+    if netloc in ("scipost.org", "www.scipost.org"):
+        scipost_path = path.strip("/")
+        if scipost_path.lower().endswith("/pdf"):
+            scipost_path = scipost_path.rsplit("/", 1)[0]
+        if re.match(r"^SciPost[A-Za-z0-9.:-]+$", scipost_path):
+            return [f"10.21468/{scipost_path}"]
 
     m = DOI_IN_TEXT_PATTERN.search(path)
     return [m.group(0)] if m else []
