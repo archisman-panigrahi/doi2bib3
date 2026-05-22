@@ -101,7 +101,7 @@ Name of the paper (includes fuzzy search):
 doi2bib3 "Projected Topological Branes"
 ```
 
-Publisher/article pages (Supports APS, AMS, ACS, IOP Science, Nature, PNAS, SciPost, and ScienceDirect journals):
+Publisher/article pages (Supports APS, AMS, ACS, Science, IOP Science, Nature, PNAS, SciPost, and ScienceDirect journals):
 
 ```bash
 doi2bib3 https://www.pnas.org/doi/10.1073/pnas.2305943120
