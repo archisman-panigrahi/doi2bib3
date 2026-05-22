@@ -6,19 +6,13 @@ DOI inputs, DOI URLs, arXiv IDs/URLs (modern and legacy), publisher landing
 pages, and uses a sequence of resolution strategies to return a BibTeX string.
 This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/) and [doi2bib2](https://github.com/davidagraf/doi2bib2).
 
-Key behaviors
+## Key behaviors
 
-- Provides bibtex entry for DOI and arXiv links.
-- Automatically detects arXiv inputs (e.g. `2411.08091`, `arXiv:2411.08091`,
-  or `https://arxiv.org/abs/2411.08091`) and queries the arXiv API for a DOI.
-- For non-arXiv inputs: attempts DOI normalization, content negotiation at
-  doi.org, Crossref transform, and as a last resort a Crossref bibliographic
-  search.
-- Supports publisher landing pages, including DOI links embedded in URL/HTML
-  metadata, IOP Science PDF article links, and ScienceDirect article links
-  whose URL contains an Elsevier PII.
-- Normalizes BibTeX output, including bundled APS/Nature/IOP journal abbreviation
-  mappings and APS article-number enrichment when Crossref metadata provides it.
+- Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
+- Resolves inputs to a DOI using URL metadata, arXiv metadata, Crossref lookup,
+  and DOI content negotiation with Crossref fallback.
+- Normalizes BibTeX output, including journal abbreviation mappings and
+  selected publisher-specific cleanup.
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
 - Diagram version of the pipeline: [`docs/ALGORITHM_VISUALS.md`](docs/ALGORITHM_VISUALS.md)
 
@@ -123,6 +117,11 @@ doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 
 Note: If the tool is not installed, you can run `python scripts/doi2bib3 https://doi.org/10.1038/nphys1170`.
 
+## Supported journal groups
+
+`doi2bib3` directly supports many APS, AMS, ACS, Nature, PNAS, ScienceDirect and IOP groups of journals.
+For other journals, the DOI link works, but the paper's URL would not work..
+
 ## Programmatic usage
 
 ### Public API
@@ -130,19 +129,6 @@ Note: If the tool is not installed, you can run `python scripts/doi2bib3 https:/
 The Python API exposes one primary function:
 
 - `doi2bib3.fetch_bibtex(identifier: str, timeout: int = 15) -> str`
-
-Behavior:
-
-- Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
-- Resolves input to a DOI using arXiv and/or Crossref when needed.
-- Resolves IOP Science article PDF URLs by removing the trailing `/pdf` view
-  suffix before DOI validation.
-- Resolves ScienceDirect article URLs by extracting the Elsevier PII and
-  querying Elsevier article metadata before falling back to generic URL/HTML
-  DOI extraction.
-- Fetches BibTeX via DOI content negotiation (with Crossref fallback).
-- Returns normalized BibTeX output (same formatting as CLI output).
-- Full step-by-step algorithm: [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
 
 Example:
 
