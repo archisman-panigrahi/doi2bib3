@@ -141,6 +141,34 @@ bib = fetch_bibtex('https://www.pnas.org/doi/10.1073/pnas.2305943120')
 print(bib)
 ```
 
+Additionally two convenience helpers are provided for APS/RevTeX-style
+`\bibitem` output:
+
+- `doi2bib3.format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str`
+- `doi2bib3.fetch_bibitem_aps(identifier: str, key: Optional[str] = None, timeout: int = 15) -> str`
+
+Examples:
+
+Format an already-obtained BibTeX string into an APS `\bibitem`:
+
+```python
+from doi2bib3 import format_bibtex_to_aps_bibitem
+
+normalized_bibtex = "@article{smith_foobar_2020, title={Foo Bar}, author={Smith, A.}, year={2020}}"
+bibitem = format_bibtex_to_aps_bibitem(normalized_bibtex, key="Smith2020")
+print(bibitem)
+```
+
+Fetch an identifier (DOI/arXiv/etc.), get its normalized BibTeX, and return
+an APS `\bibitem` in one call:
+
+```python
+from doi2bib3 import fetch_bibitem_aps
+
+bibitem = fetch_bibitem_aps('10.1038/nphys1170', key='PhysRevSmith2008')
+print(bibitem)
+```
+
 ### Programmatic CLI entry
 
 Use `subprocess` with `scripts/doi2bib3` (or installed `doi2bib3` command)

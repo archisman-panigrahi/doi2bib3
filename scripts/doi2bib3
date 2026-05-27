@@ -19,7 +19,7 @@ try:
 except Exception:
     pass
 
-from doi2bib3.backend import fetch_bibtex
+from doi2bib3 import fetch_bibtex, format_bibtex_to_aps_bibitem
 from doi2bib3.io import save_bibtex_to_file
 
 
@@ -34,6 +34,12 @@ def build_parser():
         help="DOI, DOI URL, arXiv id/URL, or publisher URL",
     )
     p.add_argument("-o", "--out", help="Write .bib file to this path")
+    p.add_argument(
+        "-b",
+        "--bibitem",
+        action="store_true",
+        help="Also print an APS/RevTeX \\bibitem entry derived from the BibTeX",
+    )
     return p
 
 
@@ -54,8 +60,20 @@ def main(argv=None):
     if args.out:
         save_bibtex_to_file(bib, args.out, append=True)
         print("Wrote", args.out)
+        if args.bibitem:
+            try:
+                bibitem = format_bibtex_to_aps_bibitem(bib)
+                print(bibitem)
+            except Exception as e:
+                print("Warning: failed to format bibitem:", e, file=sys.stderr)
     else:
         print(bib)
+        if args.bibitem:
+            try:
+                bibitem = format_bibtex_to_aps_bibitem(bib)
+                print(bibitem)
+            except Exception as e:
+                print("Warning: failed to format bibitem:", e, file=sys.stderr)
     return 0
 
 
