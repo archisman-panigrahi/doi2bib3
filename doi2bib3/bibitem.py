@@ -86,6 +86,18 @@ def _format_authors_initials(author_field: str) -> str:
     return ", ".join(out[:-1]) + ", and " + out[-1]
 
 
+def _remove_protective_braces(text: str) -> str:
+    """Remove protective braces added by BibTeX normalization.
+    
+    Converts patterns like {Feshbach} to Feshbach while preserving
+    other brace usage (nested structures, math, etc.).
+    """
+    if not text:
+        return text
+    result = re.sub(r"\{([A-Za-z\s\-]+)\}", r"\1", text)
+    return result
+
+
 def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str:
     """Format a normalized/formatted BibTeX string into an APS \bibitem.
 
@@ -104,7 +116,7 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     bibkey = key or entry.get("ID") or entry.get("id") or "entry"
 
     authors = _format_authors_initials(entry.get("author", ""))
-    title = entry.get("title", "")
+    title = _remove_protective_braces(entry.get("title", ""))
 
     journal = entry.get("journal") or entry.get("booktitle") or entry.get("publisher")
     volume = entry.get("volume", "")
@@ -124,13 +136,8 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     if title:
         parts.append(title)
     if journal:
-        # make the journal volume (number) bold in LaTeX
-        if volume:
-            vol_part = f"\\textbf{{{volume}}}"
-            if number:
-                vol_part = f"{vol_part}({number})"
-        else:
-            vol_part = f"\\textbf{{{number}}}" if number else ""
+        # make the journal volume bold in LaTeX
+        vol_part = f"\\textbf{{{volume}}}" if volume else ""
         jp = " ".join(p for p in (journal, vol_part) if p)
         if pages:
             jp = f"{jp}, {pages}"
