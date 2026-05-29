@@ -105,11 +105,13 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
         if pages:
             jp = f"{jp}, {pages}"
         if doi:
+            if year:
+                jp = f"{jp} ({year})"
+                year = ""
             jp = f"\\href{{https://doi.org/{doi}}}{{{jp}}}"
         parts.append(jp)
-    else:
-        if pages:
-            parts.append(pages)
+    elif pages:
+        parts.append(pages)
 
     # Keep any non-DOI URL as a fallback only if present.
     url = entry.get("url")
@@ -119,6 +121,8 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     output = ", ".join(p for p in parts if p)
     if year:
         output = f"{output} ({year})" if output else f"({year})"
+    if output:
+        output += "."
 
     return f"\\bibitem{{{bibkey}}}\n{output}\n"
 

@@ -26,7 +26,7 @@ def test_format_bibtex_to_aps_bibitem_uses_normalized_fields():
         "F. Englert, K. Peeters, and A. Taormina, "
         "Twenty-four near-instabilities of Caspar-Klug viruses, "
         "\\href{https://doi.org/10.1103/PhysRevE.78.031908}"
-        "{Phys. Rev. E \\textbf{78}, 031908} (2008)\n"
+        "{Phys. Rev. E \\textbf{78}, 031908 (2008)}.\n"
     )
 
 
@@ -40,7 +40,7 @@ def test_format_bibtex_to_aps_bibitem_allows_custom_key():
 
     assert format_bibtex_to_aps_bibitem(bib, key="custom") == (
         "\\bibitem{custom}\n"
-        "M. Aspelmeyer, Measured measurement (2009)\n"
+        "M. Aspelmeyer, Measured measurement (2009).\n"
     )
 
 
