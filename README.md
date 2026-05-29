@@ -62,17 +62,18 @@ pip install -e .
 
 ## CLI usage
 
-The CLI accepts a single positional identifier and an optional `-o/--out`
-path to save the BibTeX output. When installed, the package installs a console
+The CLI accepts a single positional identifier, an optional `-o/--out`
+path to save the BibTeX output, and `-b/--bibitem` to also print an
+APS/RevTeX-style `\bibitem`. When installed, the package installs a console
 script named `doi2bib3` (configured in `pyproject.toml`). From the repository
 root you can run the local script wrapper at `scripts/doi2bib3`.
 
 ```bash
 # using the local wrapper script from repo root
-python scripts/doi2bib3 <identifier> [-o OUT]
+python scripts/doi2bib3 <identifier> [-o OUT] [--bibitem]
 
 # or when installed as console script
-doi2bib3 <identifier> -o references.bib
+doi2bib3 <identifier> [-o OUT] [--bibitem]
 ```
 
 ## Examples
@@ -116,6 +117,24 @@ Save to a file:
 ```bash
 doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
+
+This appends the BibTeX entry to `paper.bib` and prints `Wrote paper.bib`.
+
+Print BibTeX and an APS/RevTeX-style `\bibitem` without saving to a file:
+
+```bash
+doi2bib3 https://doi.org/10.1038/nphys1170 --bibitem
+```
+
+Save BibTeX to a file and print the `\bibitem`:
+
+```bash
+doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib --bibitem
+```
+
+When `-o/--out` and `--bibitem` are used together, the BibTeX entry is
+appended to the file, `Wrote paper.bib` is printed, and the `\bibitem` is
+printed to the terminal. The `\bibitem` is not written to the `.bib` file.
 
 Note: If the tool is not installed, you can run `python scripts/doi2bib3 https://doi.org/10.1038/nphys1170`.
 
