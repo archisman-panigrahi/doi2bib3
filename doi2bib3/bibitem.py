@@ -6,12 +6,27 @@ Provides two public functions:
 - `fetch_bibitem_aps(identifier, key=None, timeout=15)` - resolve an identifier
   to BibTeX (reusing `fetch_bibtex`) and return a `\bibitem` block.
 """
-from typing import Optional
 import re
+from typing import Optional
 
 import bibtexparser
+from bibtexparser.customization import splitname
 
 from .backend import fetch_bibtex, DOIError
+
+
+def _initials(tokens: list[str]) -> str:
+    parts = re.split(r"[\s-]+", " ".join(tokens))
+    return " ".join(f"{part[0].upper()}." for part in parts if part[:1].isalpha())
+
+
+def _format_author(author: str) -> str:
+    name = splitname(author, strict_mode=False)
+    surname = " ".join(name["von"] + name["last"])
+    if name["jr"]:
+        surname = f"{surname}, {' '.join(name['jr'])}"
+    initials = _initials(name["first"])
+    return " ".join(part for part in (initials, surname) if part)
 
 
 def _format_authors_initials(author_field: str) -> str:
@@ -21,63 +36,8 @@ def _format_authors_initials(author_field: str) -> str:
     """
     if not author_field:
         return ""
-    authors = [a.strip() for a in author_field.split(" and ") if a.strip()]
-    out = []
-    # common lowercase name particles to treat as part of the surname
-    particles = {
-        "van",
-        "von",
-        "de",
-        "del",
-        "da",
-        "di",
-        "la",
-        "le",
-        "du",
-        "dos",
-        "das",
-        "des",
-        "der",
-        "den",
-        "st",
-        "st.",
-        "al",
-        "bin",
-        "ibn",
-    }
-
-    for a in authors:
-        if "," in a:
-            last, given = [p.strip() for p in a.split(",", 1)]
-        else:
-            parts = a.split()
-            if len(parts) == 1:
-                last = parts[0]
-                given = ""
-            else:
-                # detect lowercase particles preceding the final token and
-                # include them as part of the surname (e.g. "van Beethoven")
-                i = len(parts) - 1
-                surname_tokens = [parts[i]]
-                i -= 1
-                while i >= 0 and parts[i].lower().rstrip(".") in particles:
-                    surname_tokens.insert(0, parts[i])
-                    i -= 1
-                last = " ".join(surname_tokens)
-                given = " ".join(parts[: i + 1])
-
-        initials = []
-        for token in re.split(r"[\s-]+", given.strip()):
-            if not token:
-                continue
-            ch = token[0]
-            if ch.isalpha():
-                initials.append(ch.upper() + ".")
-
-        if initials:
-            out.append(" ".join(initials) + " " + last)
-        else:
-            out.append(last)
+    out = [_format_author(author) for author in author_field.split(" and ")]
+    out = [author for author in out if author]
 
     if len(out) <= 1:
         return out[0] if out else ""
@@ -94,8 +54,17 @@ def _remove_protective_braces(text: str) -> str:
     """
     if not text:
         return text
-    result = re.sub(r"\{([A-Za-z\s\-]+)\}", r"\1", text)
-    return result
+    return re.sub(r"\{([A-Za-z\s\-]+)\}", r"\1", text)
+
+
+def _doi_from_entry(entry: dict[str, str]) -> Optional[str]:
+    doi = entry.get("doi")
+    if doi:
+        return doi
+    match = re.search(r"doi\.org/(10\.\d{4,9}/\S+)$", entry.get("url", ""))
+    if match:
+        return match.group(1).rstrip(".,;:)]}'\"")
+    return None
 
 
 def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str:
@@ -120,15 +89,9 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
 
     journal = entry.get("journal") or entry.get("booktitle") or entry.get("publisher")
     volume = entry.get("volume", "")
-    number = entry.get("number", "")
     pages = entry.get("pages", "")
     year = entry.get("year", "")
-    doi = entry.get("doi")
-    if not doi:
-        url = entry.get("url", "")
-        match = re.search(r"doi\.org/(10\.\d{4,9}/\S+)$", url)
-        if match:
-            doi = match.group(1).rstrip(".,;:)]}'\"")
+    doi = _doi_from_entry(entry)
 
     parts = []
     if authors:
@@ -148,15 +111,14 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
         if pages:
             parts.append(pages)
 
-    if year:
-        parts.append(f"({year})")
-
     # Keep any non-DOI URL as a fallback only if present.
     url = entry.get("url")
     if url and not doi:
         parts.append(url)
 
     output = ", ".join(p for p in parts if p)
+    if year:
+        output = f"{output} ({year})" if output else f"({year})"
 
     return f"\\bibitem{{{bibkey}}}\n{output}\n"
 
@@ -167,8 +129,4 @@ def fetch_bibitem_aps(identifier: str, key: Optional[str] = None, timeout: int =
     Reuses `fetch_bibtex` to avoid duplicating network/normalization logic.
     """
     bibtex = fetch_bibtex(identifier, timeout=timeout)
-    try:
-        return format_bibtex_to_aps_bibitem(bibtex, key=key)
-    except Exception:
-        fallback_key = key or "entry"
-        return f"\\bibitem{{{fallback_key}}}\n{bibtex}\n"
+    return format_bibtex_to_aps_bibitem(bibtex, key=key)

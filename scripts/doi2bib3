@@ -60,20 +60,15 @@ def main(argv=None):
     if args.out:
         save_bibtex_to_file(bib, args.out, append=True)
         print("Wrote", args.out)
-        if args.bibitem:
-            try:
-                bibitem = format_bibtex_to_aps_bibitem(bib)
-                print(bibitem)
-            except Exception as e:
-                print("Warning: failed to format bibitem:", e, file=sys.stderr)
     else:
         print(bib)
-        if args.bibitem:
-            try:
-                bibitem = format_bibtex_to_aps_bibitem(bib)
-                print(bibitem)
-            except Exception as e:
-                print("Warning: failed to format bibitem:", e, file=sys.stderr)
+
+    if args.bibitem:
+        try:
+            print(format_bibtex_to_aps_bibitem(bib))
+        except Exception as e:
+            print("Warning: failed to format bibitem:", e, file=sys.stderr)
+
     return 0
 
 
