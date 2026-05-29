@@ -324,8 +324,7 @@ def normalize_bibtex(
                 p = re.sub(r"(?<=\d)\s*-[\u2013\u2014-]?\s*(?=\d)", "--", p)
                 entry["pages"] = p
 
-        publisher = entry.get("publisher", "").strip()
-        if "American Physical Society" in publisher and not pages:
+        if not pages:
             doi = entry.get("doi", "").strip()
             if doi:
                 article_num = fetch_article_number_from_crossref(doi)

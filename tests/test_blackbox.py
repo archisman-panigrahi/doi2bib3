@@ -124,6 +124,7 @@ def test_article_output(capfd, input_value, expected_output) -> None:
  journal = {Commun. Phys.},
  month = {September},
  number = {1},
+ pages = {230},
  publisher = {Springer Science and Business Media LLC},
  title = {{Projected} topological branes},
  url = {http://dx.doi.org/10.1038/s42005-022-01006-x},
