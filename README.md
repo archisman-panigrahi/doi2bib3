@@ -43,6 +43,10 @@ sudo apt update
 sudo apt install python3-doi2bib3
 ```
 
+### Debian
+
+You can grab the prebuild .deb package from [GitHub releases](https://github.com/archisman-panigrahi/doi2bib3/releases/latest).
+
 ### Installing from source
 
 Create a virtual environment and install runtime dependencies:
