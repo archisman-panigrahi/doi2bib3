@@ -15,6 +15,9 @@ from bibtexparser.customization import splitname
 from .backend import fetch_bibtex, DOIError
 
 
+_APS_PAGE_RANGE_RE = re.compile(r"\s*(\d+)\s*--\s*\d+\s*")
+
+
 def _initials(tokens: list[str]) -> str:
     parts = re.split(r"[\s-]+", " ".join(tokens))
     return " ".join(f"{part[0].upper()}." for part in parts if part[:1].isalpha())
@@ -67,6 +70,23 @@ def _doi_from_entry(entry: dict[str, str]) -> Optional[str]:
     return None
 
 
+def _is_aps_entry(entry: dict[str, str], doi: Optional[str]) -> bool:
+    publisher = entry.get("publisher", "").lower()
+    if "american physical society" in publisher:
+        return True
+    if doi and doi.lower().startswith("10.1103/"):
+        return True
+    return False
+
+
+def _aps_bibitem_pages(entry: dict[str, str], doi: Optional[str]) -> str:
+    pages = entry.get("pages", "")
+    if not _is_aps_entry(entry, doi):
+        return pages
+    match = _APS_PAGE_RANGE_RE.fullmatch(pages)
+    return match.group(1) if match else pages
+
+
 def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str:
     """Format a normalized/formatted BibTeX string into an APS \bibitem.
 
@@ -95,9 +115,9 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     if not journal and not is_arxiv:
         journal = entry.get("publisher")
     volume = entry.get("volume", "")
-    pages = entry.get("pages", "")
     year = entry.get("year", "")
     doi = _doi_from_entry(entry)
+    pages = _aps_bibitem_pages(entry, doi)
 
     parts = []
     if authors:

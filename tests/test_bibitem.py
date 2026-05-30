@@ -63,6 +63,44 @@ def test_format_bibtex_to_aps_bibitem_shows_arxiv_eprint_for_unpublished():
     )
 
 
+def test_format_bibtex_to_aps_bibitem_shows_first_page_for_aps_page_ranges():
+    bib = r"""@article{Englert_2014,
+ author = {Englert, Berthold-Georg},
+ journal = {Phys. Rev. A},
+ pages = {843--850},
+ publisher = {American Physical Society (APS)},
+ title = {An APS paper with a page range},
+ volume = {89},
+ year = {2014}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Englert_2014}\n"
+        "B. G. Englert, An APS paper with a page range, "
+        "Phys. Rev. A \\textbf{89}, 843 (2014).\n"
+    )
+
+
+def test_format_bibtex_to_aps_bibitem_keeps_non_aps_page_ranges():
+    bib = r"""@article{Florencio_2015,
+ author = {Florencio, Joao},
+ journal = {Example Journal},
+ pages = {53--59},
+ publisher = {Example Publisher},
+ title = {A non APS paper with a page range},
+ volume = {10},
+ year = {2015}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Florencio_2015}\n"
+        "J. Florencio, A non APS paper with a page range, "
+        "Example Journal \\textbf{10}, 53--59 (2015).\n"
+    )
+
+
 def test_format_bibtex_to_aps_bibitem_rejects_empty_bibtex():
     with pytest.raises(DOIError):
         format_bibtex_to_aps_bibitem("")
