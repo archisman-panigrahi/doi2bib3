@@ -44,6 +44,25 @@ def test_format_bibtex_to_aps_bibitem_allows_custom_key():
     )
 
 
+def test_format_bibtex_to_aps_bibitem_shows_arxiv_eprint_for_unpublished():
+    bib = r"""@misc{Doe_2025,
+ author = {Doe, Jane and Smith, John},
+ archivePrefix = {arXiv},
+ eprint = {2501.12345},
+ primaryClass = {cond-mat.str-el},
+ title = {A preprint about something},
+ year = {2025}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Doe_2025}\n"
+        "J. Doe, and J. Smith, "
+        "A preprint about something, "
+        "\\href{https://arxiv.org/abs/2501.12345}{arXiv:2501.12345} (2025).\n"
+    )
+
+
 def test_format_bibtex_to_aps_bibitem_rejects_empty_bibtex():
     with pytest.raises(DOIError):
         format_bibtex_to_aps_bibitem("")

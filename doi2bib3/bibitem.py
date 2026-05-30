@@ -87,7 +87,13 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     authors = _format_authors_initials(entry.get("author", ""))
     title = _remove_protective_braces(entry.get("title", ""))
 
-    journal = entry.get("journal") or entry.get("booktitle") or entry.get("publisher")
+    eprint = entry.get("eprint", "")
+    archive_prefix = entry.get("archiveprefix", "") or entry.get("archivePrefix", "")
+    is_arxiv = archive_prefix.lower() == "arxiv" and eprint
+
+    journal = entry.get("journal") or entry.get("booktitle")
+    if not journal and not is_arxiv:
+        journal = entry.get("publisher")
     volume = entry.get("volume", "")
     pages = entry.get("pages", "")
     year = entry.get("year", "")
@@ -110,12 +116,15 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
                 year = ""
             jp = f"\\href{{https://doi.org/{doi}}}{{{jp}}}"
         parts.append(jp)
+    elif is_arxiv:
+        arxiv_ref = f"\\href{{https://arxiv.org/abs/{eprint}}}{{arXiv:{eprint}}}"
+        parts.append(arxiv_ref)
     elif pages:
         parts.append(pages)
 
     # Keep any non-DOI URL as a fallback only if present.
     url = entry.get("url")
-    if url and not doi:
+    if url and not doi and not is_arxiv:
         parts.append(url)
 
     output = ", ".join(p for p in parts if p)
