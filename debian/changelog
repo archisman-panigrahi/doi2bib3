@@ -1,3 +1,9 @@
+python-doi2bib3 (1.3.1-1) unstable; urgency=medium
+
+  * Show arXiv eprint number in bibitem for unpublished preprints
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Fri, 29 May 2026 20:06:22 -0400
+
 python-doi2bib3 (1.3.0-1) unstable; urgency=medium
 
   * Fetch article number from CrossRef for any journal missing pages, not
