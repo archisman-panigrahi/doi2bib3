@@ -74,16 +74,17 @@ def test_fetch_bibtex_adds_arxiv_fields_for_unpublished_arxiv_url(monkeypatch):
 
 @pytest.mark.imported
 @pytest.mark.parametrize(
-    "identifier",
+    "identifier, arxiv_id",
     [
-        "arxiv.org/abs/2502.01918",
-        "www.arxiv.org/abs/2502.01918",
-        "arxiv.org/pdf/2502.01918.pdf",
+        ("arxiv.org/abs/2502.01918", "2502.01918"),
+        ("www.arxiv.org/abs/2502.01918", "2502.01918"),
+        ("arxiv.org/pdf/2502.01918.pdf", "2502.01918"),
+        ("http://xxx.lanl.gov/abs/cond-mat/9903064", "cond-mat/9903064"),
+        ("http://xxx.lanl.gov/pdf/cond-mat/9903064.pdf", "cond-mat/9903064"),
     ],
 )
-def test_fetch_bibtex_accepts_schemeless_arxiv_urls(monkeypatch, identifier):
+def test_fetch_bibtex_accepts_arxiv_url_aliases(monkeypatch, identifier, arxiv_id):
     called_urls = []
-    arxiv_id = "2502.01918"
     responses = {
         f"http://export.arxiv.org/api/query?id_list={arxiv_id}": FakeResponse(
             text=f"""

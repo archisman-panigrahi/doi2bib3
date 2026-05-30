@@ -95,6 +95,7 @@ ArXiv inputs (detected automatically):
 doi2bib3 https://arxiv.org/abs/2411.08091
 doi2bib3 arxiv.org/abs/2411.08091
 doi2bib3 www.arxiv.org/abs/2411.08091
+doi2bib3 http://xxx.lanl.gov/abs/cond-mat/9903064
 doi2bib3 arXiv:2411.08091
 doi2bib3 2411.08091
 doi2bib3 hep-th/9901001

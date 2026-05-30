@@ -17,6 +17,11 @@ flowchart TD
     H -->|CLI stdout| I[Print BibTeX]
     H -->|CLI -o| J[save_bibtex_to_file append=True]
     H -->|Python| K[Return string]
+    I --> L{--bibitem?}
+    J --> L
+    L -->|Yes| M[format_bibtex_to_aps_bibitem]
+    L -->|No| N[Done]
+    M --> O[Print bibitem or warning]
 ```
 
 ## 2) Identifier Resolution Decision Tree
@@ -81,7 +86,7 @@ flowchart TD
     A[Raw BibTeX] --> B[bibtexparser.loads]
     B --> C[Recompute citation key Lastname_firstword_year]
     C --> D[Normalize pages n/a removal and dash normalization]
-    D --> E{APS publisher and pages missing?}
+    D --> E{Pages missing and DOI present?}
     E -->|Yes| F[fetch_article_number_from_crossref]
     E -->|No| G[Continue]
     F --> G
@@ -108,4 +113,5 @@ flowchart TD
 - URL DOI extraction: `doi2bib3/backend.py` -> `_extract_doi_from_publisher_url()`, `_extract_doi_from_sciencedirect_url()`
 - Fetch raw BibTeX: `doi2bib3/backend.py` -> `_fetch_bibtex_for_doi()`
 - Normalize BibTeX: `doi2bib3/normalize.py` -> `normalize_bibtex()`
+- Format APS/RevTeX bibitem: `doi2bib3/bibitem.py` -> `format_bibtex_to_aps_bibitem()`
 - Write output file: `doi2bib3/io.py` -> `save_bibtex_to_file()`
