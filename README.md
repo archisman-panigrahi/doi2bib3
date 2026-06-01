@@ -13,6 +13,9 @@ This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/
   and DOI content negotiation with Crossref fallback.
 - Normalizes BibTeX output, including journal abbreviation mappings and
   selected publisher-specific cleanup.
+- **Verifies** existing BibTeX references against CrossRef, arXiv, and the DOI
+  Handle System to catch hallucinated or mistyped citations -- see
+  [Verifying references](#verifying-references).
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
 - Diagram version of the pipeline: [`docs/ALGORITHM_VISUALS.md`](docs/ALGORITHM_VISUALS.md)
 
@@ -62,18 +65,22 @@ pip install -e .
 
 ## CLI usage
 
-The CLI accepts a single positional identifier and an optional `-o/--out`
-path to save the BibTeX output. When installed, the package installs a console
-script named `doi2bib3` (configured in `pyproject.toml`). From the repository
-root you can run the local script wrapper at `scripts/doi2bib3`.
+The CLI has two subcommands -- `fetch` (the historical behaviour) and
+`verify` (described below). When installed, the package installs a console
+script named `doi2bib3`. From the repository root you can also run the
+local wrapper at `scripts/doi2bib3`.
 
 ```bash
-# using the local wrapper script from repo root
-python scripts/doi2bib3 <identifier> [-o OUT]
+# Fetch BibTeX for a single identifier
+doi2bib3 fetch <identifier> [-o OUT]
 
-# or when installed as console script
-doi2bib3 <identifier> -o references.bib
+# Verify the references in a .bib file or project folder
+doi2bib3 verify <path> [--json]
 ```
+
+For backward compatibility, `doi2bib3 <identifier>` with no subcommand is
+treated as `doi2bib3 fetch <identifier>`, so every example below continues
+to work unchanged.
 
 ## Examples
 
@@ -119,6 +126,56 @@ doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 
 Note: If the tool is not installed, you can run `python scripts/doi2bib3 https://doi.org/10.1038/nphys1170`.
 
+## Verifying references
+
+Large language models often invent realistic-looking citations -- DOIs that
+do not resolve, papers that were never written, or DOIs that point to a
+completely different article. `doi2bib3 verify` checks every BibTeX entry
+against authoritative databases (CrossRef, arXiv, the DOI registry) and
+tells you which ones hold up.
+
+Verification is **deterministic**: the real record for each entry is fetched
+and the title, authors and year are corroborated in code -- no AI service,
+API key, or subscription is involved. Each reference is reported as one of:
+
+- **verified** -- an identifier resolves and the metadata is corroborated, or
+  the title and authors were matched in CrossRef.
+- **review** -- the work exists, but its registered metadata could not be
+  matched to the entry with confidence; worth a quick look.
+- **mismatch** -- the DOI/arXiv ID resolves, but to a record with a different
+  title *and* different authors.
+- **unresolved** -- the DOI/arXiv ID does not resolve in CrossRef or the DOI
+  registry.
+- **unverified** -- the entry had no identifier and no confident match, or a
+  database was unreachable.
+
+```bash
+doi2bib3 verify references.bib
+doi2bib3 verify ./paper-folder            # walks .bib + .tex files
+doi2bib3 verify references.bib --json     # machine-readable output
+```
+
+When `.tex` files are present alongside `.bib` files, the tool also reports
+`\cite` keys that are not defined in any `.bib` file (a common sign of an
+invented citation key).
+
+### Programmatic verification
+
+```python
+from doi2bib3 import verify_bibtex, summary
+
+results = verify_bibtex(open("references.bib").read())
+print(summary(results))           # counts by status
+
+for r in results:
+    if r.needs_attention:
+        print(r.key, r.status, r.reason)
+```
+
+Lower-level entry points are available too: `parse_bibtex` to split parsing
+from verification, `verify_entry` / `verify_entries` for finer control, and
+`check_cite_keys` / `extract_cite_keys` for the LaTeX-side cite-key check.
+
 ## Supported journal groups
 
 `doi2bib3` directly supports many APS, AMS, ACS, Nature, PNAS, SciPost, ScienceDirect and IOP groups of journals.
@@ -128,9 +185,15 @@ For other journals, the DOI link works, but the paper's URL would not work..
 
 ### Public API
 
-The Python API exposes one primary function:
+The Python API exposes:
 
 - `doi2bib3.fetch_bibtex(identifier: str, timeout: int = 15) -> str`
+- `doi2bib3.verify_bibtex(text: str, *, timeout: int = 20) -> list[VerificationResult]`
+- `doi2bib3.parse_bibtex(text: str) -> list[BibEntry]`
+- `doi2bib3.verify_entry(entry, *, timeout: int = 20) -> VerificationResult`
+- `doi2bib3.verify_entries(entries, *, timeout: int = 20, max_workers: int = 4, progress=None) -> list[VerificationResult]`
+- `doi2bib3.summary(results) -> dict[str, int]`
+- `doi2bib3.check_cite_keys(tex_sources, defined_keys) -> CiteCheckResult`
 
 Example:
 
@@ -151,7 +214,10 @@ for automated CLI tests.
 - `doi2bib3/backend.py`: input resolution and network fetch logic
 - `doi2bib3/normalize.py`: BibTeX normalization/transforms
 - `doi2bib3/io.py`: file output helpers
-- `scripts/doi2bib3`: command-line argument parsing and output handling
+- `doi2bib3/cli.py`: argparse-based CLI with `fetch` and `verify` subcommands
+- `doi2bib3/verify/`: deterministic reference verification engine
+  (parser, matching, CrossRef/arXiv/DOI-handle lookups, verdict logic)
+- `scripts/doi2bib3`: legacy script wrapper that forwards to `doi2bib3.cli`
 
 ## License
 
