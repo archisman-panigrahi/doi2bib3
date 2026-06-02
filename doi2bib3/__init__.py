@@ -1,6 +1,7 @@
 """doi2bib3 package shim."""
 
 from .backend import fetch_bibtex
+from .bibitem import fetch_bibitem_aps, format_bibtex_to_aps_bibitem
 from .verify import (
     BibEntry,
     CiteCheckResult,
@@ -24,6 +25,9 @@ from .verify import (
 
 __all__ = [
     "fetch_bibtex",
+    # APS bibitem
+    "fetch_bibitem_aps",
+    "format_bibtex_to_aps_bibitem",
     # Verify engine
     "BibEntry",
     "parse_bibtex",

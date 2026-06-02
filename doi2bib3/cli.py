@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 from .backend import fetch_bibtex
+from .bibitem import format_bibtex_to_aps_bibitem
 from .io import save_bibtex_to_file
 from .verify import (
     STATUS_ICON,
@@ -88,6 +89,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="DOI, DOI URL, arXiv id/URL, publisher URL, or article title.",
     )
     p_fetch.add_argument("-o", "--out", help="Write .bib file to this path (append).")
+    p_fetch.add_argument(
+        "-b",
+        "--bibitem",
+        action="store_true",
+        help="Also print an APS/RevTeX \\bibitem entry derived from the BibTeX.",
+    )
 
     p_verify = sub.add_parser(
         "verify",
@@ -145,6 +152,13 @@ def _cmd_fetch(args) -> int:
         print("Wrote", args.out)
     else:
         print(bib)
+
+    if args.bibitem:
+        try:
+            print(format_bibtex_to_aps_bibitem(bib))
+        except Exception as exc:  # noqa: BLE001 - bibitem is best-effort
+            print("Warning: failed to format bibitem:", exc, file=sys.stderr)
+
     return 0
 
 

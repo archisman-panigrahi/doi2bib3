@@ -46,6 +46,10 @@ sudo apt update
 sudo apt install python3-doi2bib3
 ```
 
+### Debian
+
+You can grab the prebuild .deb package from [GitHub releases](https://github.com/archisman-panigrahi/doi2bib3/releases/latest).
+
 ### Installing from source
 
 Create a virtual environment and install runtime dependencies:
@@ -71,8 +75,8 @@ script named `doi2bib3`. From the repository root you can also run the
 local wrapper at `scripts/doi2bib3`.
 
 ```bash
-# Fetch BibTeX for a single identifier
-doi2bib3 fetch <identifier> [-o OUT]
+# Fetch BibTeX for a single identifier (optionally an APS/RevTeX \bibitem)
+doi2bib3 fetch <identifier> [-o OUT] [-b/--bibitem]
 
 # Verify the references in a .bib file or project folder
 doi2bib3 verify <path> [--json]
@@ -97,6 +101,7 @@ ArXiv inputs (detected automatically):
 doi2bib3 https://arxiv.org/abs/2411.08091
 doi2bib3 arxiv.org/abs/2411.08091
 doi2bib3 www.arxiv.org/abs/2411.08091
+doi2bib3 http://xxx.lanl.gov/abs/cond-mat/9903064
 doi2bib3 arXiv:2411.08091
 doi2bib3 2411.08091
 doi2bib3 hep-th/9901001
@@ -123,6 +128,24 @@ Save to a file:
 ```bash
 doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
+
+This appends the BibTeX entry to `paper.bib` and prints `Wrote paper.bib`.
+
+Print BibTeX and an APS/RevTeX-style `\bibitem` without saving to a file:
+
+```bash
+doi2bib3 https://doi.org/10.1038/nphys1170 --bibitem
+```
+
+Save BibTeX to a file and print the `\bibitem`:
+
+```bash
+doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib --bibitem
+```
+
+When `-o/--out` and `--bibitem` are used together, the BibTeX entry is
+appended to the file, `Wrote paper.bib` is printed, and the `\bibitem` is
+printed to the terminal. The `\bibitem` is not written to the `.bib` file.
 
 Note: If the tool is not installed, you can run `python scripts/doi2bib3 https://doi.org/10.1038/nphys1170`.
 
@@ -202,6 +225,34 @@ from doi2bib3 import fetch_bibtex
 
 bib = fetch_bibtex('https://www.pnas.org/doi/10.1073/pnas.2305943120')
 print(bib)
+```
+
+Additionally two convenience helpers are provided for APS/RevTeX-style
+`\bibitem` output:
+
+- `doi2bib3.format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str`
+- `doi2bib3.fetch_bibitem_aps(identifier: str, key: Optional[str] = None, timeout: int = 15) -> str`
+
+Examples:
+
+Format an already-obtained BibTeX string into an APS `\bibitem`:
+
+```python
+from doi2bib3 import format_bibtex_to_aps_bibitem
+
+normalized_bibtex = "@article{smith_foobar_2020, title={Foo Bar}, author={Smith, A.}, year={2020}}"
+bibitem = format_bibtex_to_aps_bibitem(normalized_bibtex, key="Smith2020")
+print(bibitem)
+```
+
+Fetch an identifier (DOI/arXiv/etc.), get its normalized BibTeX, and return
+an APS `\bibitem` in one call:
+
+```python
+from doi2bib3 import fetch_bibitem_aps
+
+bibitem = fetch_bibitem_aps('10.1038/nphys1170', key='PhysRevSmith2008')
+print(bibitem)
 ```
 
 ### Programmatic CLI entry

@@ -29,6 +29,8 @@ DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$")
 DOI_IN_TEXT_PATTERN = re.compile(r"10\.\d{4,9}/[^\s'\"<>]+")
 ARXIV_ID_PATTERN = re.compile(r"^(?:\d{4}\.\d+(?:v\d+)?|[A-Za-z\-]+/\d{7}(?:v\d+)?)$")
 ARXIV_DOI_PATTERN = re.compile(r"^10\.48550/arxiv\.(?P<id>.+)$", flags=re.I)
+ARXIV_HOSTS = ("arxiv.org", "www.arxiv.org", "xxx.lanl.gov")
+SCHEMELESS_ARXIV_PREFIXES = tuple(f"{host}/" for host in ARXIV_HOSTS)
 ARXIV_API_URLS = (
     "http://export.arxiv.org/api/query?id_list={id}",
     "https://export.arxiv.org/api/query?id_list={id}",
@@ -88,15 +90,15 @@ def _parse_arxiv_id_string(value: str) -> Optional[str]:
     if candidate.lower().startswith("arxiv:"):
         candidate = candidate.split(":", 1)[1].strip()
     elif _is_http_url(candidate) or candidate.lower().startswith(
-        ("arxiv.org/", "www.arxiv.org/")
+        SCHEMELESS_ARXIV_PREFIXES
     ):
         try:
-            if candidate.lower().startswith(("arxiv.org/", "www.arxiv.org/")):
+            if candidate.lower().startswith(SCHEMELESS_ARXIV_PREFIXES):
                 candidate = f"https://{candidate}"
             parsed = urlparse(candidate)
         except Exception:
             return None
-        if parsed.netloc.lower() not in ("arxiv.org", "www.arxiv.org"):
+        if parsed.netloc.lower() not in ARXIV_HOSTS:
             return None
         m = re.match(r"^(?:abs|pdf|html)/(?P<id>.+)$", parsed.path.lstrip("/"))
         if not m:

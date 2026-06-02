@@ -21,6 +21,7 @@ Given user input:
 1. Parse args:
 - positional `identifier`
 - optional `-o/--out`
+- optional `-b/--bibitem`
 - Implemented by `build_parser()` and `argparse` wiring in `main()` (`scripts/doi2bib3`)
 
 2. If `identifier` is missing:
@@ -40,14 +41,21 @@ Given user input:
 - print BibTeX to stdout
 - Implemented by `main()` (`scripts/doi2bib3`)
 
-On any exception, CLI prints `Error: <message>` to stderr and exits code 1.
-- Implemented by `try/except` in `main()` (`scripts/doi2bib3`)
+6. If `-b/--bibitem` is set:
+- format the fetched BibTeX as an APS/RevTeX-style `\bibitem`
+- print it to stdout after the BibTeX output or after the `Wrote <path>` message
+- if formatting fails, print a warning to stderr but keep exit code 0
+- the `\bibitem` is not written to `-o/--out`
+- Implemented by `format_bibtex_to_aps_bibitem()` in `doi2bib3/bibitem.py`, called from `main()`
+
+If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits code 1.
+- Implemented by the fetch `try/except` in `main()` (`scripts/doi2bib3`)
 
 ## 3. Core API flow (`fetch_bibtex`)
 
 `fetch_bibtex(identifier, timeout)` does:
 
-1. Resolve input identifier to a DOI string.
+1. Resolve input identifier to a DOI string plus optional arXiv metadata.
 - `_resolve_identifier()` in `doi2bib3/backend.py`
 
 2. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
@@ -55,6 +63,9 @@ On any exception, CLI prints `Error: <message>` to stderr and exits code 1.
 
 3. Normalize BibTeX fields and formatting.
 - `normalize_bibtex()` in `doi2bib3/normalize.py`
+- Unpublished arXiv metadata is passed through only when the arXiv entry has no
+  published journal DOI, so published arXiv inputs resolve to the journal DOI
+  without adding `archivePrefix`, `eprint`, or `primaryClass`.
 
 4. Return normalized BibTeX text.
 - `fetch_bibtex()` in `doi2bib3/backend.py`
@@ -78,7 +89,8 @@ Input is considered arXiv if it matches one of these forms:
   - `https://arxiv.org/abs/...`
   - `https://arxiv.org/pdf/...pdf`
   - `https://arxiv.org/html/...`
-  - scheme-less forms like `arxiv.org/abs/...` or `arxiv.org/pdf/...pdf`
+  - old LANL aliases like `http://xxx.lanl.gov/abs/...` and `http://xxx.lanl.gov/pdf/...pdf`
+  - scheme-less forms like `arxiv.org/abs/...`, `arxiv.org/pdf/...pdf`, or `xxx.lanl.gov/abs/...`
 
 Implementation:
 
@@ -224,6 +236,10 @@ Given resolved DOI:
 
 Raw provider BibTeX is normalized before returning.
 - Main function: `normalize_bibtex(bib_str, arxiv_id=None, primary_class=None, include_arxiv_fields=False)` in `doi2bib3/normalize.py`
+- The parser is seeded with common month string definitions before parsing, so
+  provider output such as `month=july` can be resolved even when the provider
+  omitted `@string` definitions. These helper string definitions are removed
+  before serialization.
 
 For each entry:
 
@@ -241,11 +257,11 @@ For each entry:
 - normalize en/em dashes and numeric ranges to `--`
 - Implemented in pages block inside `normalize_bibtex()`
 
-3. APS-specific enrichment:
-- if publisher contains `American Physical Society` and pages missing:
+3. Article-number enrichment:
+- if pages are missing and the entry has a DOI:
   - query Crossref work metadata
   - copy `article-number` into pages when available
-- Implemented by `fetch_article_number_from_crossref()` + APS check in `normalize_bibtex()`
+- Implemented by `fetch_article_number_from_crossref()` and the missing-pages block in `normalize_bibtex()`
 
 4. If `url` exists:
 - URL-decode it
@@ -277,7 +293,7 @@ For each entry:
 Publisher-specific note:
 - ScienceDirect/Elsevier handling is part of identifier resolution, before raw
   BibTeX fetch, because ScienceDirect URLs often expose a PII instead of a DOI.
-- APS article-number enrichment and APS/Nature/IOP journal abbreviations are part of
+- Crossref article-number enrichment and APS/Nature/IOP journal abbreviations are part of
   BibTeX normalization, after raw BibTeX has already been fetched.
 
 8. Month cleanup:
@@ -313,7 +329,7 @@ Resolution/fetch may contact:
   - `_fetch_arxiv_entry()` / `_fetch_arxiv_metadata()` in `doi2bib3/backend.py`
 - `doi.org` (content negotiation for BibTeX)
   - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
-- `api.crossref.org` (search, transform, APS article-number)
+- `api.crossref.org` (search, transform, article-number)
   - `_search_doi_via_crossref()` in `doi2bib3/backend.py`
   - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
   - `fetch_article_number_from_crossref()` in `doi2bib3/normalize.py`
