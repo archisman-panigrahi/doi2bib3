@@ -21,6 +21,7 @@ import unicodedata
 import os
 import re
 import urllib.parse
+import xml.etree.ElementTree as ET
 
 import bibtexparser
 from bibtexparser.bparser import BibTexParser
@@ -117,6 +118,45 @@ ASCII_BIBTEX_KEY_CHARS = str.maketrans(
         "ȷ": "j",
     }
 )
+
+GREEK_LATEX = {
+    char: f"\\{name}"
+    for char, name in zip(
+        "αβγδεζηθικλμνξπρστυφχψω",
+        "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu "
+        "nu xi pi rho sigma tau upsilon phi chi psi omega".split(),
+    )
+}
+GREEK_LATEX.update(
+    {
+        "Γ": "\\Gamma",
+        "Δ": "\\Delta",
+        "Θ": "\\Theta",
+        "Λ": "\\Lambda",
+        "Ξ": "\\Xi",
+        "Π": "\\Pi",
+        "Σ": "\\Sigma",
+        "Υ": "\\Upsilon",
+        "Φ": "\\Phi",
+        "Ψ": "\\Psi",
+        "Ω": "\\Omega",
+    }
+)
+
+MATHML_RE = re.compile(
+    r"<(?P<prefix>[A-Za-z_][\w.-]*:)?math\b.*?</(?P=prefix)math>",
+    flags=re.DOTALL | re.IGNORECASE,
+)
+ELEMENT = r"[A-Z][a-z]?"
+MIXED_SITE_GROUP = rf"\({ELEMENT}(?:,{ELEMENT})+\)"
+CHEMICAL_FORMULA_RE = re.compile(
+    rf"(?<![A-Za-z\\])(?P<formula>(?:{MIXED_SITE_GROUP}|{ELEMENT})"
+    rf"(?:\d+(?:\.\d+)?|{MIXED_SITE_GROUP}|{ELEMENT}|[+\-−]|[δδε])+)(?![a-z])"
+)
+FORMULA_TOKEN_RE = re.compile(
+    rf"{MIXED_SITE_GROUP}|{ELEMENT}|\d+(?:\.\d+)?(?:[+\-−][δδε])?|[δδε]|[+\-−]"
+)
+ELEMENT_RE = re.compile(ELEMENT)
 
 
 def _load_journal_replacements():
@@ -222,6 +262,123 @@ def encode_special_chars(value: str) -> str:
         encoded.append(letter)
 
     return "".join(encoded)
+
+
+def _local_name(tag: str) -> str:
+    if "}" in tag:
+        return tag.rsplit("}", 1)[1]
+    return tag.rsplit(":", 1)[-1]
+
+
+def _latex_escape(text: str) -> str:
+    special = {
+        "\\": r"\backslash{}",
+        "{": r"\{",
+        "}": r"\}",
+        "_": r"\_",
+        "^": r"\^{}",
+        "&": r"\&",
+        "%": r"\%",
+        "#": r"\#",
+        "$": r"\$",
+    }
+    return "".join(special.get(char, char) for char in text)
+
+
+def _math_char_to_latex(char: str) -> str:
+    return GREEK_LATEX.get(char, "-" if char == "−" else _latex_escape(char))
+
+
+def _mathml_element_to_latex(element: ET.Element) -> str:
+    tag = _local_name(element.tag)
+    children = list(element)
+    text = "".join(element.itertext()).strip().strip("{}")
+
+    if tag == "math":
+        return "$" + "".join(_mathml_element_to_latex(child) for child in children) + "$"
+    if tag == "mrow" or (children and tag not in {"msub", "msup", "msubsup"}):
+        return "".join(_mathml_element_to_latex(child) for child in children)
+    if tag == "mi":
+        return GREEK_LATEX.get(
+            text,
+            r"\mathrm{" + text + "}"
+            if re.fullmatch(r"[A-Za-z][A-Za-z0-9]+", text)
+            else _latex_escape(text),
+        )
+    if tag in {"mn", "mo"}:
+        return _latex_escape(text.replace("−", "-"))
+    if tag == "mtext":
+        if text in {"−", "-", "‐", "‑", "‒", "–", "—"}:
+            return r"\text{-}"
+        return r"\text{" + _latex_escape(text) + "}"
+    if tag in {"msub", "msup"} and len(children) >= 2:
+        op = "_" if tag == "msub" else "^"
+        base = _mathml_element_to_latex(children[0])
+        script = _mathml_element_to_latex(children[1])
+        return "{" + base + "}" + op + "{" + script + "}"
+    if tag == "msubsup" and len(children) >= 3:
+        base, subscript, superscript = (
+            _mathml_element_to_latex(child) for child in children[:3]
+        )
+        return "{" + base + "}_{" + subscript + "}^{" + superscript + "}"
+    return _latex_escape(text)
+
+
+def _plain_mathml_to_latex(mathml: str) -> str:
+    text = re.sub(r"<[^>]+>", "", mathml)
+    text = re.sub(r"\s+", " ", text).strip()
+    return "$" + "".join(_math_char_to_latex(char) for char in text) + "$"
+
+
+def _convert_mathml_match(match: re.Match) -> str:
+    mathml = match.group(0)
+    xml = mathml.replace("“", '"').replace("”", '"').replace("‘", "'").replace("’", "'")
+    try:
+        root = ET.fromstring(xml)
+    except ET.ParseError:
+        return _plain_mathml_to_latex(mathml)
+    return _mathml_element_to_latex(root)
+
+
+def mathml_to_latex(value: str) -> str:
+    return MATHML_RE.sub(_convert_mathml_match, value)
+
+
+def _formula_token_to_latex(token: str) -> str:
+    if re.fullmatch(MIXED_SITE_GROUP, token):
+        elements = token[1:-1].split(",")
+        return "(" + ",".join(r"\mathrm{" + element + "}" for element in elements) + ")"
+    if ELEMENT_RE.fullmatch(token):
+        return r"\mathrm{" + token + "}"
+    if token[0].isdigit():
+        subscript = "".join(_math_char_to_latex(char) for char in token)
+        return "_{" + subscript + "}"
+    return GREEK_LATEX.get(token, "-" if token == "−" else token)
+
+
+def _chemical_formula_to_latex(formula: str) -> str:
+    latex = "".join(
+        _formula_token_to_latex(match.group(0))
+        for match in FORMULA_TOKEN_RE.finditer(formula)
+    )
+    return "$" + latex + "$"
+
+
+def _convert_chemical_formula_match(match: re.Match) -> str:
+    formula = match.group("formula")
+    has_subscript_marker = re.search(r"\d", formula) or any(
+        char in GREEK_LATEX for char in formula
+    )
+    if not (ELEMENT_RE.search(formula) and has_subscript_marker):
+        return formula
+    return _chemical_formula_to_latex(formula)
+
+
+def chemical_formulas_to_latex(value: str) -> str:
+    parts = re.split(r"(\$[^$]*\$)", value)
+    for idx in range(0, len(parts), 2):
+        parts[idx] = CHEMICAL_FORMULA_RE.sub(_convert_chemical_formula_match, parts[idx])
+    return "".join(parts)
 
 
 def ascii_for_bibtex_key(value: str) -> str:
@@ -337,6 +494,8 @@ def normalize_bibtex(
 
         if "title" in entry:
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
+            entry["title"] = mathml_to_latex(entry["title"])
+            entry["title"] = chemical_formulas_to_latex(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
 

@@ -63,6 +63,27 @@ def test_format_bibtex_to_aps_bibitem_shows_arxiv_eprint_for_unpublished():
     )
 
 
+def test_format_bibtex_to_aps_bibitem_preserves_latex_math_command_arguments():
+    bib = r"""@article{Zhang_evidence_2026,
+ author = {Zhang, Heda},
+ journal = {Phys. Rev. Lett.},
+ pages = {226301},
+ title = {{Evidence} of {Chiral} {Fermion} {Edge} {Modes} in $\alpha\text{-}{\mathrm{RuCl}}_{3}$},
+ url = {http://dx.doi.org/10.1103/rn48-7j6y},
+ volume = {136},
+ year = {2026}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Zhang_evidence_2026}\n"
+        "H. Zhang, Evidence of Chiral Fermion Edge Modes in "
+        "$\\alpha\\text{-}{\\mathrm{RuCl}}_{3}$, "
+        "\\href{https://doi.org/10.1103/rn48-7j6y}"
+        "{Phys. Rev. Lett. \\textbf{136}, 226301 (2026)}.\n"
+    )
+
+
 def test_format_bibtex_to_aps_bibitem_shows_first_page_for_aps_page_ranges():
     bib = r"""@article{Englert_2014,
  author = {Englert, Berthold-Georg},

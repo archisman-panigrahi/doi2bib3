@@ -277,9 +277,126 @@ For each entry:
 - implemented in `normalize_bibtex()`
 
 6. Title formatting:
-- convert `\{\var...\}` placeholders to math form with dollars
-- protect capitalized words by wrapping with `{...}`
-- Implemented by `insert_dollars()` and `protect_capitalized_words()` called in `normalize_bibtex()`
+- Unicode-normalize the title to NFC.
+- Convert embedded inline MathML blocks to LaTeX math with `mathml_to_latex()`.
+- Convert compact plain-text chemical formulas to LaTeX math with
+  `chemical_formulas_to_latex()`.
+- Convert `\{\var...\}` placeholders to math form with dollars.
+- Protect capitalized words by wrapping with `{...}`.
+- Implemented by `mathml_to_latex()`, `chemical_formulas_to_latex()`,
+  `insert_dollars()`, and `protect_capitalized_words()` called in
+  `normalize_bibtex()`.
+
+### 6.1 Inline MathML title conversion
+
+Some publishers return formulas in titles as inline MathML instead of LaTeX,
+for example APS titles containing `<mml:math>...</mml:math>`.
+
+The conversion pass works as follows:
+
+1. Find complete inline MathML blocks using `MATHML_RE`.
+   - Both unprefixed `<math>` and namespaced `<mml:math>` tags are accepted.
+   - Matching is limited to the full math block, so surrounding title text is
+     left untouched.
+2. Normalize smart quotes in XML attributes before parsing, because some DOI
+   content-negotiation responses contain typographic quotes around namespace
+   attributes.
+3. Parse the block with `xml.etree.ElementTree`.
+4. Convert supported MathML nodes recursively:
+   - `math` becomes a `$...$` LaTeX math span.
+   - `mrow` concatenates converted child nodes.
+   - `mi` becomes a Greek LaTeX command when it is a recognized Greek symbol,
+     roman text with `\mathrm{...}` when it is a multi-character identifier
+     such as `RuCl`, or escaped text otherwise.
+   - `mn` and `mo` become escaped math text, with Unicode minus normalized to
+     `-`.
+   - `mtext` becomes `\text{...}`; minus-like text becomes `\text{-}`.
+   - `msub`, `msup`, and `msubsup` become grouped `_`, `^`, or combined
+     subscript/superscript LaTeX.
+5. If XML parsing fails, strip tags as a fallback and convert recognized Greek
+   symbols and minus signs while still wrapping the result in `$...$`.
+
+Example:
+
+```text
+<mml:mi>α</mml:mi><mml:mtext>−</mml:mtext>
+<mml:msub><mml:mi>RuCl</mml:mi><mml:mn>3</mml:mn></mml:msub>
+```
+
+becomes:
+
+```latex
+$\alpha\text{-}{\mathrm{RuCl}}_{3}$
+```
+
+### 6.2 Plain-text chemical formula conversion
+
+Some publishers return chemical formulas as ordinary title text, for example
+`(Pb,Bi)2Sr2CuO6+δ`. Without a formula-aware pass, the later capitalization
+protection treats element symbols as ordinary title words and produces invalid
+chemistry such as `({Pb},{Bi})2{Sr2CuO6}+δ`.
+
+The plain-text formula parser is deliberately conservative:
+
+1. Split the title on existing `$...$` math spans.
+   - Only non-math segments are scanned.
+   - This prevents already-correct LaTeX math from being converted twice.
+2. Find compact formula-like chunks using `CHEMICAL_FORMULA_RE`.
+   - A candidate must start at a non-letter/non-backslash boundary.
+   - It must begin with either an element-like token matching `[A-Z][a-z]?`,
+     such as `Pb`, `O`, or `Cu`, or a comma-separated mixed site group such
+     as `(Pb,Bi)`.
+   - It may then contain element-like tokens, mixed site groups,
+     stoichiometric numbers, `+`/`-`/Unicode minus, and selected Greek
+     composition variables such as `δ`.
+   - It must not be immediately followed by a lowercase letter. This helps
+     avoid catching prefixes inside normal words.
+3. Reject weak candidates unless they contain:
+   - at least one element-like token, and
+   - either a digit or a recognized Greek composition variable.
+4. Tokenize accepted formulas with `FORMULA_TOKEN_RE`.
+   - Mixed site group: `(Pb,Bi)`
+   - Element-like token: `Sr`, `Cu`, `O`
+   - Stoichiometric number, optionally with signed Greek suffix: `2`, `6+δ`
+   - Standalone recognized Greek variable or sign
+5. Convert tokens:
+   - element-like tokens -> `\mathrm{Element}`
+   - mixed site groups -> `(\mathrm{Pb},\mathrm{Bi})`
+   - numeric tokens -> `_{...}` subscripts
+   - Greek variables -> LaTeX commands such as `\delta`
+   - Unicode minus -> `-`
+6. Wrap the converted formula in `$...$`.
+
+Example:
+
+```text
+(Pb,Bi)2Sr2CuO6+δ
+```
+
+is tokenized as:
+
+```text
+(Pb,Bi), 2, Sr, 2, Cu, O, 6+δ
+```
+
+and becomes:
+
+```latex
+$(\mathrm{Pb},\mathrm{Bi})_{2}\mathrm{Sr}_{2}\mathrm{Cu}\mathrm{O}_{6+\delta}$
+```
+
+Known intentional limits:
+
+- The parser handles compact formula notation found in titles; it is not a
+  complete chemistry grammar.
+- It does not validate element symbols against a periodic-table list. The
+  code uses the syntactic pattern `[A-Z][a-z]?`, plus surrounding formula
+  structure, to keep the implementation small and avoid a bundled element
+  table.
+- Parenthesized groups are currently intended for comma-separated mixed sites
+  such as `(Pb,Bi)`, not every possible inorganic formula convention.
+- It avoids scanning existing LaTeX math spans, so provider-supplied correct
+  math is preserved as-is.
 
 7. Journal formatting:
 - apply abbreviation mapping from bundled JSON dictionaries:

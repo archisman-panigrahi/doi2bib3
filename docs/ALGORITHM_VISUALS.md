@@ -95,12 +95,15 @@ flowchart TD
     I -->|Yes| J[Add archivePrefix eprint and optional primaryClass]
     I -->|No| K[Continue]
     J --> K
-    K --> L[Title transforms insert_dollars and protect capitals]
-    L --> M[Journal abbreviation mapping]
-    M --> N[Month brace cleanup]
-    N --> O[Special char to LaTeX encoding]
-    O --> P[bibtexparser.dumps]
-    P --> Q[Normalized BibTeX]
+    K --> L[Title NFC normalization]
+    L --> M[Convert inline MathML to LaTeX math]
+    M --> N[Convert plain chemical formulas to LaTeX math]
+    N --> O[Title transforms insert_dollars and protect capitals]
+    O --> P[Journal abbreviation mapping]
+    P --> Q[Month brace cleanup]
+    Q --> R[Special char to LaTeX encoding]
+    R --> S[bibtexparser.dumps]
+    S --> T[Normalized BibTeX]
 ```
 
 ## 5) Function Map (Quick Reference)
