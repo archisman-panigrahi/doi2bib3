@@ -57,7 +57,7 @@ def _remove_protective_braces(text: str) -> str:
     """
     if not text:
         return text
-    return re.sub(r"\{([A-Za-z\s\-]+)\}", r"\1", text)
+    return re.sub(r"(?<![A-Za-z\\])\{([A-Za-z\s\-]+)\}", r"\1", text)
 
 
 def _doi_from_entry(entry: dict[str, str]) -> Optional[str]:

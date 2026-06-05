@@ -70,6 +70,56 @@ def test_normalize_bibtex_encodes_real_accented_booktitle_metadata():
     assert "S\\~{a}o Paulo" in out
 
 
+def test_normalize_bibtex_converts_inline_mathml_title_to_latex():
+    raw = """@article{Zhang_2026,
+ title={Evidence of Chiral Fermion Edge Modes through Geometric Engineering of Thermal Hall Effect in
+<mml:math xmlns:mml=“http://www.w3.org/1998/Math/MathML” display=“inline”>
+<mml:mrow>
+<mml:mi>α</mml:mi>
+<mml:mtext>−</mml:mtext>
+<mml:msub>
+<mml:mrow>
+<mml:mi>RuCl</mml:mi>
+</mml:mrow>
+<mml:mrow>
+<mml:mn>3</mml:mn>
+</mml:mrow>
+</mml:msub>
+</mml:mrow>
+</mml:math>},
+ author={Zhang, Heda},
+ journal={Physical Review Letters},
+ year={2026},
+ url={https://doi.org/10.1103/rn48-7j6y}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert "<mml:" not in out
+    assert r"$\alpha\text{-}{\mathrm{RuCl}}_{3}$" in out
+    assert "http://www.w3.org" not in out
+
+
+def test_normalize_bibtex_subscripts_plain_text_chemical_formula_title():
+    raw = """@article{Tromp_2023,
+ title={Puddle formation and persistent gaps across the non-mean-field breakdown of superconductivity in overdoped (Pb,Bi)2Sr2CuO6+δ},
+ author={Tromp, Willem O.},
+ journal={Nature Materials},
+ year={2023},
+ url={https://doi.org/10.1038/s41563-023-01497-1}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert "({Pb},{Bi})2{Sr2CuO6}+δ" not in out
+    assert (
+        r"$(\mathrm{Pb},\mathrm{Bi})_{2}\mathrm{Sr}_{2}\mathrm{Cu}\mathrm{O}_{6+\delta}$"
+        in out
+    )
+
+
 @pytest.mark.imported
 @pytest.mark.parametrize(
     "doi, raw, expected_id, expected_author_parts, expected_title_parts",
