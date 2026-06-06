@@ -381,6 +381,14 @@ def chemical_formulas_to_latex(value: str) -> str:
     return "".join(parts)
 
 
+def plus_minus_to_latex(value: str) -> str:
+    parts = re.split(r"(\$[^$]*\$)", value)
+    for idx, part in enumerate(parts):
+        replacement = r"\pm" if idx % 2 else r"$\pm$"
+        parts[idx] = part.replace("+-", replacement).replace("±", replacement)
+    return "".join(parts)
+
+
 def ensure_space_around_math(title: str) -> str:
     """Separate inline math from neighboring title text."""
     def _space_math_match(match: re.Match) -> str:
@@ -512,8 +520,9 @@ def normalize_bibtex(
         if "title" in entry:
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
             entry["title"] = mathml_to_latex(entry["title"])
-            entry["title"] = chemical_formulas_to_latex(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
+            entry["title"] = plus_minus_to_latex(entry["title"])
+            entry["title"] = chemical_formulas_to_latex(entry["title"])
             entry["title"] = ensure_space_around_math(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
 

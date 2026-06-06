@@ -133,7 +133,37 @@ def test_normalize_bibtex_inserts_space_before_inline_math_title():
     out = normalize_bibtex(raw)
 
     assert r"in ${\mathrm{Ba}}_{0.6}{K}_{0.4}{\mathrm{Fe}}_{2}{\mathrm{As}}_{2}$" in out
-    assert r"{Antiphase} ${s}_{±}$ {Pairing}" in out
+    assert r"{Antiphase} ${s}_{\pm}$ {Pairing}" in out
+
+
+def test_normalize_bibtex_converts_plus_minus_title_text_to_latex():
+    raw = """@article{Example_2026,
+ title={Critical temperature Tc+-2 K in a sample},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{Tc} $\pm$ 2 {K}" in out
+
+
+def test_normalize_bibtex_converts_plus_minus_inside_math_title():
+    raw = r"""@article{Example_2026,
+ title={Antiphase ${s}_{+-}$ pairing},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"${s}_{\pm}$ pairing" in out
 
 
 @pytest.mark.imported
