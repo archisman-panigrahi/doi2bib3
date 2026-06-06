@@ -218,6 +218,40 @@ def test_normalize_bibtex_escapes_ampersands_in_titles():
     assert "&amp;" not in out
 
 
+def test_normalize_bibtex_escapes_percent_signs_in_titles():
+    raw = r"""@article{Harlass_2024,
+ title={Measurement report: 100% sustainable aviation fuel and already escaped 50\% fuel},
+ author={Harlass, Theresa},
+ journal={Atmospheric Chemistry and Physics},
+ year={2024},
+ url={https://doi.org/10.5194/acp-24-11807-2024}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"100\% sustainable aviation fuel" in out
+    assert r"50\% fuel" in out
+    assert r"\\%" not in out
+
+
+def test_normalize_bibtex_escapes_hash_signs_in_titles():
+    raw = r"""@article{Example_2026,
+ title={Sample #1 and already escaped sample \#2},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{Sample} \#1" in out
+    assert r"sample \#2" in out
+    assert r"\\#" not in out
+
+
 @pytest.mark.imported
 @pytest.mark.parametrize(
     "doi, raw, expected_id, expected_author_parts, expected_title_parts",
