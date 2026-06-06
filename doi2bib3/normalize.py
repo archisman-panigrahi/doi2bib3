@@ -204,6 +204,25 @@ def escape_latex_chars(value: str, chars: str) -> str:
     return re.sub(rf"(?<!\\)([{re.escape(chars)}])", r"\\\1", value)
 
 
+def html_italics_to_latex(value: str) -> str:
+    if "<i" not in value.lower():
+        return value
+
+    return re.sub(
+        r"<i\b[^>]*>(.*?)</i>",
+        lambda match: r"\textit{" + match.group(1).strip() + "}",
+        value,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def normalize_title_whitespace(title: str) -> str:
+    if not re.search(r"[ \t\r\n\f\v]{2,}|[\t\r\n\f\v]", title):
+        return title.strip()
+
+    return re.sub(r"[ \t\r\n\f\v]+", " ", title).strip()
+
+
 def insert_dollars(title: str) -> str:
     return VAR_RE.sub(r"\\1$\\2$\\3", title)
 
@@ -529,11 +548,13 @@ def normalize_bibtex(
         if "title" in entry:
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
             entry["title"] = mathml_to_latex(entry["title"])
+            entry["title"] = html_italics_to_latex(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
             entry["title"] = plus_minus_to_latex(entry["title"])
             entry["title"] = chemical_formulas_to_latex(entry["title"])
             entry["title"] = ensure_space_around_math(entry["title"])
             entry["title"] = escape_latex_chars(entry["title"], "&%#")
+            entry["title"] = normalize_title_whitespace(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
 
         if "journal" in entry:

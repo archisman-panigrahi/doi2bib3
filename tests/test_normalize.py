@@ -252,6 +252,29 @@ def test_normalize_bibtex_escapes_hash_signs_in_titles():
     assert r"\\#" not in out
 
 
+def test_normalize_bibtex_converts_html_italics_in_titles_to_latex():
+    raw = """@article{Delbroek_2026,
+ title={Effects on
+<i>v</i>
+sin
+<i>i</i>
+determinations of O stars},
+ author={Delbroek, L.},
+ journal={Astronomy &amp; Astrophysics},
+ year={2026},
+ url={https://doi.org/10.1051/0004-6361/202660102}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{Effects} on \textit{v} sin \textit{i} determinations" in out
+    assert r"\textit{v}" in out
+    assert r"\textit{i}" in out
+    assert "<i>" not in out
+    assert "</i>" not in out
+
+
 @pytest.mark.imported
 @pytest.mark.parametrize(
     "doi, raw, expected_id, expected_author_parts, expected_title_parts",

@@ -84,6 +84,27 @@ def test_format_bibtex_to_aps_bibitem_preserves_latex_math_command_arguments():
     )
 
 
+def test_format_bibtex_to_aps_bibitem_preserves_latex_italics_arguments():
+    bib = r"""@article{Delbroek_effects_2026,
+ author = {Delbroek, L.},
+ journal = {Astronomy \& Astrophysics},
+ pages = {L11},
+ title = {{Effects} on \textit{v} sin \textit{i} determinations of {O} stars},
+ url = {http://dx.doi.org/10.1051/0004-6361/202660102},
+ volume = {710},
+ year = {2026}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Delbroek_effects_2026}\n"
+        "L. Delbroek, Effects on \\textit{v} sin \\textit{i} determinations "
+        "of O stars, "
+        "\\href{https://doi.org/10.1051/0004-6361/202660102}"
+        "{Astronomy \\& Astrophysics \\textbf{710}, L11 (2026)}.\n"
+    )
+
+
 def test_format_bibtex_to_aps_bibitem_shows_first_page_for_aps_page_ranges():
     bib = r"""@article{Englert_2014,
  author = {Englert, Berthold-Georg},
