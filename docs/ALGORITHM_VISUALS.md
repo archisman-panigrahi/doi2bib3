@@ -10,15 +10,18 @@ flowchart TD
     B -->|CLI| C[scripts/doi2bib3::main]
     B -->|API| D[doi2bib3.fetch_bibtex]
     C --> D
-    D --> P{DSpace entity or Handle URL?}
+    D --> E{Valid ISBN?}
+    E -->|Yes| IB[_fetch_bibtex_for_isbn via book metadata APIs]
+    E -->|No| P{DSpace entity or Handle URL?}
     P -->|Yes| Q[Resolve Handle if needed and fetch item metadata]
-    P -->|No| E[_resolve_identifier]
+    P -->|No| V[_resolve_identifier]
     Q --> R{Thesis degree present?}
     R -->|Yes| S[Build thesis BibTeX]
     R -->|No| T{DOI present?}
     T -->|Yes| F
     T -->|No| U[Raise DOIError]
-    E --> F[_fetch_bibtex_for_doi]
+    V --> F[_fetch_bibtex_for_doi]
+    IB --> G[normalize_bibtex]
     F --> G[normalize_bibtex]
     S --> G
     G --> H{Caller}
@@ -36,7 +39,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[identifier] --> B{Looks like arXiv?}
+    A[identifier] --> AA{Valid ISBN-10/13?}
+    AA -->|Yes| AB[Open Library book query]
+    AB --> AE{Found?}
+    AE -->|No| AF[Google Books volume query]
+    AE -->|Yes| AC[Construct @book]
+    AF --> AC
+    AC --> ZB[Raw BibTeX for normalization]
+
+    AA -->|No| B{Looks like arXiv?}
     B -->|Yes| C[_parse_arxiv_id_string]
     C --> D[_fetch_arxiv_metadata via arXiv API fallback list]
     D --> E{Published DOI found in arXiv metadata?}
@@ -73,7 +84,24 @@ flowchart TD
     T --> Z
 ```
 
-## 3) DOI to BibTeX Fetch (with fallback)
+## 3) ISBN to BibTeX Fetch
+
+```mermaid
+flowchart TD
+    A[ISBN input] --> B[_parse_isbn_string]
+    B --> C{Checksum valid?}
+    C -->|No| D[Continue non-ISBN resolver]
+    C -->|Yes| E[GET Open Library api/books]
+    E --> F{Book with title?}
+    F -->|No| O[GET Google Books volumes?q=isbn:<isbn>]
+    O --> P{Volume with title?}
+    P -->|No| G[Raise DOIError]
+    F -->|Yes| H[Build @book fields]
+    P -->|Yes| H
+    H --> I[Raw BibTeX]
+```
+
+## 4) DOI to BibTeX Fetch (with fallback)
 
 ```mermaid
 flowchart TD
@@ -87,7 +115,7 @@ flowchart TD
     D --> H[Raw BibTeX]
 ```
 
-## 4) Normalization Pipeline
+## 5) Normalization Pipeline
 
 ```mermaid
 flowchart TD
@@ -122,12 +150,13 @@ flowchart TD
     Z --> AA[Normalized BibTeX]
 ```
 
-## 5) Function Map (Quick Reference)
+## 6) Function Map (Quick Reference)
 
 - CLI entry: `scripts/doi2bib3` -> `build_parser()`, `main()`
 - Public API: `doi2bib3/backend.py` -> `fetch_bibtex()`
 - DSpace metadata and Handle resolution: `doi2bib3/backend.py` -> `_dspace_item_api_url()`, `_resolve_dspace_api_url()`, `_fetch_dspace_metadata()`
 - DSpace thesis/DOI selection: `doi2bib3/backend.py` -> `_dspace_thesis_bibtex()`, `_dspace_item_doi()`
+- ISBN parse/query: `doi2bib3/backend.py` -> `_parse_isbn_string()`, `_fetch_bibtex_for_isbn()`
 - Resolve identifier: `doi2bib3/backend.py` -> `_resolve_identifier()`, `_resolve_identifier_to_doi()`
 - arXiv parse/query: `doi2bib3/backend.py` -> `_parse_arxiv_id_string()`, `_parse_arxiv_id_from_doi_string()`, `_fetch_arxiv_metadata()`, `_resolve_arxiv_identifier()`
 - Crossref search: `doi2bib3/backend.py` -> `_search_doi_via_crossref()`

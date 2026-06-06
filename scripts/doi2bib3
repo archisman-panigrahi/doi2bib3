@@ -43,7 +43,8 @@ def build_parser():
     p = argparse.ArgumentParser(
         description=(
             f"%(prog)s {current_version}\n\n"
-            "Fetch BibTeX by DOI, DOI URL, arXiv id or arXiv URL"
+            "Fetch BibTeX by DOI, ISBN, arXiv id/URL, publisher URL, "
+            "DSpace URL or title"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -51,7 +52,7 @@ def build_parser():
     p.add_argument(
         "identifier",
         nargs="?",
-        help="DOI, DOI URL, arXiv id/URL, or publisher URL",
+        help="DOI, ISBN, arXiv id/URL, publisher URL, or title",
     )
     p.add_argument("-o", "--out", help="Write .bib file to this path")
     p.add_argument(
