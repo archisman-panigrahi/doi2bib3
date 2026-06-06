@@ -16,6 +16,7 @@
 """BibTeX normalization helpers."""
 
 from typing import Optional
+import html
 import json
 import unicodedata
 import os
@@ -196,6 +197,11 @@ def abbreviate_journal_name(journal: str) -> str:
             return abbrev
 
     return journal
+
+
+def escape_latex_ampersands(value: str) -> str:
+    value = html.unescape(value)
+    return re.sub(r"(?<!\\)&", r"\\&", value)
 
 
 def insert_dollars(title: str) -> str:
@@ -527,10 +533,12 @@ def normalize_bibtex(
             entry["title"] = plus_minus_to_latex(entry["title"])
             entry["title"] = chemical_formulas_to_latex(entry["title"])
             entry["title"] = ensure_space_around_math(entry["title"])
+            entry["title"] = escape_latex_ampersands(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
 
         if "journal" in entry:
             entry["journal"] = abbreviate_journal_name(entry["journal"])
+            entry["journal"] = escape_latex_ampersands(entry["journal"])
 
         if "month" in entry:
             entry["month"] = entry["month"].strip()

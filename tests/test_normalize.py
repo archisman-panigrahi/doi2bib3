@@ -166,6 +166,58 @@ def test_normalize_bibtex_converts_plus_minus_inside_math_title():
     assert r"${s}_{\pm}$ pairing" in out
 
 
+def test_normalize_bibtex_escapes_ampersands_in_journal_names():
+    raw = r"""@article{Delbroek_2026,
+ title={Effects on stars},
+ author={Delbroek, L.},
+ journal={Astronomy &amp; Astrophysics},
+ year={2026},
+ url={https://doi.org/10.1051/0004-6361/202660102}
+}
+
+@article{Example_2026,
+ title={Social example},
+ author={Example, A.},
+ journal={Energy Research & Social Science},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+
+@article{Escaped_2026,
+ title={Already escaped},
+ author={Escaped, A.},
+ journal={Politics \& Society},
+ year={2026},
+ url={https://doi.org/10.1103/escaped}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"journal = {Astronomy \& Astrophysics}" in out
+    assert r"journal = {Energy Research \& Social Science}" in out
+    assert r"journal = {Politics \& Society}" in out
+    assert r"\\&" not in out
+    assert "&amp;" not in out
+
+
+def test_normalize_bibtex_escapes_ampersands_in_titles():
+    raw = r"""@article{Example_2026,
+ title={R&D and energy &amp; society with politics \& policy},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{R}\&{D} and energy \& society with politics \& policy" in out
+    assert r"\\&" not in out
+    assert "&amp;" not in out
+
+
 @pytest.mark.imported
 @pytest.mark.parametrize(
     "doi, raw, expected_id, expected_author_parts, expected_title_parts",
