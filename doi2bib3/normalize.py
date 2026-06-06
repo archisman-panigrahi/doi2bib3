@@ -382,6 +382,9 @@ def chemical_formulas_to_latex(value: str) -> str:
 
 
 def plus_minus_to_latex(value: str) -> str:
+    if "+-" not in value and "±" not in value:
+        return value
+
     parts = re.split(r"(\$[^$]*\$)", value)
     for idx, part in enumerate(parts):
         replacement = r"\pm" if idx % 2 else r"$\pm$"
