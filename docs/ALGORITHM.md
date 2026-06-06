@@ -55,27 +55,84 @@ If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits co
 
 `fetch_bibtex(identifier, timeout)` does:
 
-1. Resolve input identifier to a DOI string plus optional arXiv metadata.
+1. Try ISBN parsing first.
+- If the input is a valid ISBN-10 or ISBN-13, fetch public book metadata,
+  construct a raw `@book` BibTeX entry, normalize it, and return it.
+- Open Library is tried first; Google Books is used as a fallback if Open
+  Library fails or has no matching result.
+- Implemented by `_parse_isbn_string()`, `_fetch_bibtex_for_isbn()`, and
+  `normalize_bibtex()` in `doi2bib3/backend.py`.
+
+2. Resolve non-ISBN input to a DOI string plus optional arXiv metadata.
 - `_resolve_identifier()` in `doi2bib3/backend.py`
 
-2. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
+3. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
 - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
 
-3. Normalize BibTeX fields and formatting.
+4. Normalize BibTeX fields and formatting.
 - `normalize_bibtex()` in `doi2bib3/normalize.py`
 - Unpublished arXiv metadata is passed through only when the arXiv entry has no
   published journal DOI, so published arXiv inputs resolve to the journal DOI
   without adding `archivePrefix`, `eprint`, or `primaryClass`.
 
-4. Return normalized BibTeX text.
+5. Return normalized BibTeX text.
 - `fetch_bibtex()` in `doi2bib3/backend.py`
 - If normalization fails, `fetch_bibtex()` returns raw BibTeX as fallback.
 
-## 4. Identifier -> DOI resolution
+## 4. ISBN resolution
+
+ISBN handling is a direct BibTeX fetch path and does not go through DOI
+resolution.
+
+Accepted forms:
+
+- ISBN-13, e.g. `9780465024933`
+- ISBN-10, e.g. `0306406152`
+- formatted variants with spaces or hyphens, e.g. `ISBN 978-0-465-02493-3`
+- `ISBN-10:`, `ISBN-13:`, and `urn:isbn:` prefixes
+
+Implementation:
+
+1. Strip the optional ISBN prefix, spaces, and hyphens.
+- `_parse_isbn_string()` in `doi2bib3/backend.py`
+
+2. Validate the canonical string.
+- ISBN-10 accepts nine digits plus a digit or `X` check character.
+- ISBN-13 accepts thirteen digits.
+- Checksum validation is performed by `_is_valid_isbn10()` and
+  `_is_valid_isbn13()`.
+
+3. Query Open Library first:
+- `https://openlibrary.org/api/books?bibkeys=ISBN:<isbn>&jscmd=data&format=json`
+- sends `Accept: application/json` and the shared doi2bib3 `User-Agent`
+- implemented by `_openlibrary_book_info()`
+
+4. If Open Library fails or has no result, query Google Books:
+- `https://www.googleapis.com/books/v1/volumes?q=isbn:<isbn>`
+- sends `Accept: application/json` and the shared doi2bib3 `User-Agent`
+- implemented by `_google_books_volume_info()`
+
+5. Use the first returned book/volume with a title and construct `@book` BibTeX:
+- `title` plus `subtitle` when present
+- `author` joined with BibTeX `and`
+- `publisher`
+- four-digit `year` from `publishedDate` / `publish_date`
+- `isbn`
+- `url` from `canonicalVolumeLink`, `infoLink`, or the Open Library book URL
+- implemented by `_bibtex_from_google_books_volume()` and
+  `_bibtex_from_openlibrary_book()`
+
+6. Normalize and return the resulting `@book`.
+- Implemented by `fetch_bibtex()` calling `normalize_bibtex()`.
+
+If both providers fail or return no matching volume, ISBN resolution raises
+`DOIError("ISBN lookup failed for ...")`.
+
+## 5. Identifier -> DOI resolution
 
 Resolution order is deterministic and is implemented in `_resolve_identifier()` (`doi2bib3/backend.py`).
 
-### 4.1 Try arXiv parsing first
+### 5.1 Try arXiv parsing first
 
 Input is considered arXiv if it matches one of these forms:
 
@@ -128,7 +185,7 @@ Implementation:
 - raise `DOIError("No DOI found for arXiv id: ...")`
 - implemented by `_resolve_arxiv_identifier()` in `doi2bib3/backend.py`
 
-### 4.2 If not arXiv, try DOI parsing
+### 5.2 If not arXiv, try DOI parsing
 
 Accept DOI-like input:
 
@@ -151,7 +208,7 @@ Normalization rules:
 
 Implemented by `_parse_doi_string()` in `doi2bib3/backend.py`.
 
-### 4.3 If not DOI, search via URL heuristics + Crossref
+### 5.3 If not DOI, search via URL heuristics + Crossref
 
 Used for publisher URLs and free-text (including paper titles).
 
@@ -209,7 +266,7 @@ If still unresolved:
 If none found: raise `DOIError("Crossref lookup failed for: ...")`.
 - Implemented in `_resolve_identifier_to_doi()`
 
-## 5. DOI -> raw BibTeX retrieval
+## 6. DOI -> raw BibTeX retrieval
 
 Given resolved DOI:
 
@@ -232,7 +289,7 @@ Given resolved DOI:
 - raise `DOIError` with both HTTP status codes.
 - Implemented in `_fetch_bibtex_for_doi()`
 
-## 6. BibTeX normalization
+## 7. BibTeX normalization
 
 Raw provider BibTeX is normalized before returning.
 - Main function: `normalize_bibtex(bib_str, arxiv_id=None, primary_class=None, include_arxiv_fields=False)` in `doi2bib3/normalize.py`
@@ -300,7 +357,7 @@ For each entry:
   `escape_latex_chars()`, `normalize_title_whitespace()`, and
   `protect_capitalized_words()` called in `normalize_bibtex()`.
 
-### 6.1 Inline MathML title conversion
+### 7.1 Inline MathML title conversion
 
 Some publishers return formulas in titles as inline MathML instead of LaTeX,
 for example APS titles containing `<mml:math>...</mml:math>`.
@@ -342,7 +399,7 @@ becomes:
 $\alpha\text{-}{\mathrm{RuCl}}_{3}$
 ```
 
-### 6.2 Plain-text chemical formula conversion
+### 7.2 Plain-text chemical formula conversion
 
 Some publishers return chemical formulas as ordinary title text, for example
 `(Pb,Bi)2Sr2CuO6+δ`. Without a formula-aware pass, the later capitalization
@@ -411,7 +468,7 @@ Known intentional limits:
 - It avoids scanning existing LaTeX math spans, so provider-supplied correct
   math is preserved as-is.
 
-### 6.3 HTML, spacing, and LaTeX-special title cleanup
+### 7.3 HTML, spacing, and LaTeX-special title cleanup
 
 Some provider BibTeX contains lightweight HTML and raw LaTeX-special
 characters in titles. The title cleanup passes are generic and not
@@ -458,7 +515,7 @@ Publisher-specific note:
 Finally, serialize with `bibtexparser.dumps`.
 - Implemented as return statement in `normalize_bibtex()`
 
-## 7. Output guarantees
+## 8. Output guarantees
 
 - Public Python API always attempts to return normalized BibTeX.
   - Function: `fetch_bibtex()` in `doi2bib3/backend.py`
@@ -469,10 +526,14 @@ Finally, serialize with `bibtexparser.dumps`.
 - With `-o`, the same content is appended to the target file.
   - Functions: `main()` + `save_bibtex_to_file(..., append=True)`
 
-## 8. Network dependencies
+## 9. Network dependencies
 
 Resolution/fetch may contact:
 
+- `www.googleapis.com/books/v1/volumes` (Google Books ISBN metadata)
+  - `_google_books_volume_info()` in `doi2bib3/backend.py`
+- `openlibrary.org/api/books` (Open Library ISBN metadata fallback)
+  - `_openlibrary_book_info()` in `doi2bib3/backend.py`
 - `export.arxiv.org` / `arxiv.org` API endpoints (arXiv metadata)
   - `_fetch_arxiv_entry()` / `_fetch_arxiv_metadata()` in `doi2bib3/backend.py`
 - `doi.org` (content negotiation for BibTeX)
@@ -482,4 +543,4 @@ Resolution/fetch may contact:
   - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
   - `fetch_article_number_from_crossref()` in `doi2bib3/normalize.py`
 
-If network access is blocked/unavailable, DOI/arXiv/title lookups will fail with an error.
+If network access is blocked/unavailable, DOI/ISBN/arXiv/title lookups will fail with an error.

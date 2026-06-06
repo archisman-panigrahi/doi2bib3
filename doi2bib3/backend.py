@@ -16,10 +16,13 @@
 """Identifier resolution and network fetching for BibTeX retrieval."""
 
 from dataclasses import dataclass
+import json
 from typing import Optional
 import re
 from urllib.parse import quote, unquote, urlparse
 
+import bibtexparser
+from bibtexparser.bibdatabase import BibDatabase
 import requests
 
 from .constants import USER_AGENT
@@ -27,7 +30,13 @@ from .normalize import normalize_bibtex
 
 DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$")
 DOI_IN_TEXT_PATTERN = re.compile(r"10\.\d{4,9}/[^\s'\"<>]+")
-ARXIV_ID_PATTERN = re.compile(r"^(?:\d{4}\.\d+(?:v\d+)?|[A-Za-z\-]+/\d{7}(?:v\d+)?)$")
+ISBN_PREFIX_PATTERN = re.compile(
+    r"^(?:urn:isbn:|isbn(?:-1[03])?:?)\s*", flags=re.I
+)
+ISBN_SEPARATOR_TRANSLATION = str.maketrans("", "", " \t\r\n\f\v-")
+ARXIV_ID_PATTERN = re.compile(
+    r"^(?:\d{4}\.\d+(?:v\d+)?|[A-Za-z\-]+/\d{7}(?:v\d+)?)$"
+)
 ARXIV_DOI_PATTERN = re.compile(r"^10\.48550/arxiv\.(?P<id>.+)$", flags=re.I)
 ARXIV_HOSTS = ("arxiv.org", "www.arxiv.org", "xxx.lanl.gov")
 SCHEMELESS_ARXIV_PREFIXES = tuple(f"{host}/" for host in ARXIV_HOSTS)
@@ -75,6 +84,46 @@ def _parse_doi_string(doi_input: str) -> str:
     if DOI_PATTERN.match(candidate):
         return candidate
     raise DOIError(f"Invalid DOI: {doi_input}")
+
+
+def _is_valid_isbn10(isbn: str) -> bool:
+    total = 0
+    for idx, char in enumerate(isbn):
+        if char == "X":
+            if idx != 9:
+                return False
+            value = 10
+        else:
+            value = int(char)
+        total += (10 - idx) * value
+    return total % 11 == 0
+
+
+def _is_valid_isbn13(isbn: str) -> bool:
+    total = sum(
+        (1 if idx % 2 == 0 else 3) * int(char)
+        for idx, char in enumerate(isbn[:12])
+    )
+    check_digit = (10 - (total % 10)) % 10
+    return check_digit == int(isbn[-1])
+
+
+def _parse_isbn_string(value: str) -> Optional[str]:
+    """Return a canonical ISBN-10/ISBN-13 string from input, else None."""
+    candidate = value.strip()
+    if not candidate:
+        return None
+
+    candidate = ISBN_PREFIX_PATTERN.sub("", candidate, count=1).strip()
+    if not re.fullmatch(r"[0-9Xx][0-9Xx\s-]*", candidate):
+        return None
+
+    isbn = candidate.translate(ISBN_SEPARATOR_TRANSLATION).upper()
+    if re.fullmatch(r"\d{9}[\dX]", isbn) and _is_valid_isbn10(isbn):
+        return isbn
+    if re.fullmatch(r"\d{13}", isbn) and _is_valid_isbn13(isbn):
+        return isbn
+    return None
 
 
 def _clean_doi_candidate(candidate: str) -> str:
@@ -460,8 +509,212 @@ def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
     )
 
 
+def _json_response(resp: requests.Response) -> dict:
+    try:
+        return resp.json()
+    except Exception:
+        try:
+            return json.loads(resp.text)
+        except Exception as exc:
+            raise DOIError("Invalid JSON response") from exc
+
+
+def _published_year(published_date: str) -> str:
+    match = re.search(r"\d{4}", published_date or "")
+    return match.group(0) if match else ""
+
+
+def _clean_string(value) -> str:
+    if not isinstance(value, str):
+        return ""
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def _clean_title(value: str) -> str:
+    value = _clean_string(value)
+    value = re.sub(r"\s+([:;,])", r"\1", value)
+    return re.sub(r"([:;,])(?=\S)", r"\1 ", value)
+
+
+def _join_names(value) -> str:
+    if isinstance(value, list):
+        names = []
+        for item in value:
+            if isinstance(item, dict):
+                name = _clean_string(item.get("name"))
+            else:
+                name = _clean_string(item)
+            if name:
+                names.append(name)
+        return " and ".join(names)
+    return _clean_string(value)
+
+
+def _first_name(value) -> str:
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                name = _clean_string(item.get("name"))
+            else:
+                name = _clean_string(item)
+            if name:
+                return name
+        return ""
+    return _clean_string(value)
+
+
+def _book_bibtex(
+    isbn: str,
+    title: str,
+    subtitle: str = "",
+    authors: str = "",
+    publisher: str = "",
+    year: str = "",
+    url: str = "",
+) -> str:
+    title = _clean_title(title)
+    subtitle = _clean_string(subtitle)
+    if subtitle and subtitle not in title:
+        title = f"{title}: {subtitle}" if title else subtitle
+    title = _clean_title(title)
+
+    entry = {
+        "ENTRYTYPE": "book",
+        "ID": isbn,
+        "title": title,
+        "isbn": isbn,
+    }
+
+    optional_fields = {
+        "author": _clean_string(authors),
+        "publisher": _clean_string(publisher),
+        "year": _published_year(year),
+        "url": _clean_string(url),
+    }
+    entry.update({key: value for key, value in optional_fields.items() if value})
+
+    db = BibDatabase()
+    db.entries = [entry]
+    return bibtexparser.dumps(db)
+
+
+def _google_books_volume_info(isbn: str, timeout: int = 15) -> dict:
+    """Fetch the first Google Books volume result for an ISBN."""
+    url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": USER_AGENT,
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=timeout)
+    except Exception as exc:
+        raise DOIError(f"Google Books lookup failed for ISBN {isbn}: {exc}") from exc
+
+    if resp.status_code != 200:
+        raise DOIError(
+            f"Google Books lookup failed for ISBN {isbn}: HTTP {resp.status_code}"
+        )
+
+    data = _json_response(resp)
+    if not isinstance(data, dict):
+        raise DOIError(f"Google Books lookup failed for ISBN {isbn}: invalid response")
+
+    for item in data.get("items", []) or []:
+        volume_info = item.get("volumeInfo", {}) if isinstance(item, dict) else {}
+        if isinstance(volume_info, dict) and _clean_string(volume_info.get("title")):
+            return volume_info
+
+    raise DOIError(
+        f"Google Books lookup failed for ISBN {isbn}: no book metadata found"
+    )
+
+
+def _bibtex_from_google_books_volume(isbn: str, volume_info: dict) -> str:
+    return _book_bibtex(
+        isbn,
+        title=_clean_string(volume_info.get("title")),
+        subtitle=_clean_string(volume_info.get("subtitle")),
+        authors=_join_names(volume_info.get("authors")),
+        publisher=_clean_string(volume_info.get("publisher")),
+        year=_clean_string(volume_info.get("publishedDate")),
+        url=_clean_string(
+            volume_info.get("canonicalVolumeLink") or volume_info.get("infoLink")
+        ),
+    )
+
+
+def _openlibrary_book_info(isbn: str, timeout: int = 15) -> dict:
+    """Fetch the Open Library book result for an ISBN."""
+    url = (
+        "https://openlibrary.org/api/books?"
+        f"bibkeys=ISBN:{isbn}&jscmd=data&format=json"
+    )
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": USER_AGENT,
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=timeout)
+    except Exception as exc:
+        raise DOIError(f"Open Library lookup failed for ISBN {isbn}: {exc}") from exc
+
+    if resp.status_code != 200:
+        raise DOIError(
+            f"Open Library lookup failed for ISBN {isbn}: HTTP {resp.status_code}"
+        )
+
+    data = _json_response(resp)
+    if not isinstance(data, dict):
+        raise DOIError(f"Open Library lookup failed for ISBN {isbn}: invalid response")
+
+    book = data.get(f"ISBN:{isbn}")
+    if isinstance(book, dict) and _clean_string(book.get("title")):
+        return book
+
+    raise DOIError(
+        f"Open Library lookup failed for ISBN {isbn}: no book metadata found"
+    )
+
+
+def _bibtex_from_openlibrary_book(isbn: str, book: dict) -> str:
+    return _book_bibtex(
+        isbn,
+        title=_clean_string(book.get("title")),
+        authors=_join_names(book.get("authors")),
+        publisher=_first_name(book.get("publishers")),
+        year=_clean_string(book.get("publish_date")),
+        url=_clean_string(book.get("url") or book.get("info_url")),
+    )
+
+
+def _fetch_bibtex_for_isbn(isbn: str, timeout: int = 15) -> str:
+    """Query ISBN metadata providers and return a raw BibTeX entry."""
+    errors = []
+    try:
+        book = _openlibrary_book_info(isbn, timeout=timeout)
+        return _bibtex_from_openlibrary_book(isbn, book)
+    except DOIError as exc:
+        errors.append(str(exc))
+
+    try:
+        volume_info = _google_books_volume_info(isbn, timeout=timeout)
+        return _bibtex_from_google_books_volume(isbn, volume_info)
+    except DOIError as exc:
+        errors.append(str(exc))
+
+    raise DOIError(f"ISBN lookup failed for {isbn}: {'; '.join(errors)}")
+
+
 def fetch_bibtex(identifier: str, timeout: int = 15) -> str:
     """Public API: resolve identifier and return normalized BibTeX."""
+    isbn = _parse_isbn_string(identifier)
+    if isbn:
+        raw = _fetch_bibtex_for_isbn(isbn, timeout=timeout)
+        try:
+            return normalize_bibtex(raw)
+        except Exception:
+            return raw
+
     doi, arxiv_metadata = _resolve_identifier(identifier, timeout=timeout)
     raw = _fetch_bibtex_for_doi(doi, timeout=timeout)
     try:

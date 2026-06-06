@@ -1,16 +1,20 @@
 # doi2bib3
 
-doi2bib3 is a small Python utility to fetch BibTeX metadata for a DOI or to
-resolve arXiv identifiers to DOIs and fetch their BibTeX entries. It accepts
-DOI inputs, DOI URLs, arXiv IDs/URLs (modern and legacy), publisher landing
-pages, and uses a sequence of resolution strategies to return a BibTeX string.
+doi2bib3 is a small Python utility to fetch BibTeX metadata for a DOI or ISBN,
+or to resolve arXiv identifiers to DOIs and fetch their BibTeX entries. It
+accepts DOI inputs, DOI URLs, ISBNs, arXiv IDs/URLs (modern and legacy),
+publisher landing pages, and uses a sequence of resolution strategies to
+return a BibTeX string.
 This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/) and [doi2bib2](https://github.com/davidagraf/doi2bib2).
 
 ## Key behaviors
 
-- Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
+- Accepts DOI, DOI URL, ISBN, arXiv ID/URL, publisher URL, or article-title text.
 - Resolves inputs to a DOI using URL metadata, arXiv metadata, Crossref lookup,
   and DOI content negotiation with Crossref fallback.
+- Resolves ISBN-10/ISBN-13 inputs through public book metadata providers
+  (Open Library, with Google Books fallback) and returns a normalized `@book`
+  entry.
 - Normalizes BibTeX output, including journal abbreviation mappings and
   selected publisher-specific cleanup.
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
@@ -90,6 +94,13 @@ doi2bib3 10.1038/nphys1170
 doi2bib3 https://doi.org/10.1038/nphys1170
 ```
 
+Fetch by ISBN:
+
+```bash
+doi2bib3 9780465024933
+doi2bib3 "ISBN 978-0-465-02493-3"
+```
+
 ArXiv inputs (detected automatically):
 
 ```bash
@@ -162,7 +173,7 @@ Example:
 ```python
 from doi2bib3 import fetch_bibtex
 
-bib = fetch_bibtex('https://www.pnas.org/doi/10.1073/pnas.2305943120')
+bib = fetch_bibtex('ISBN 978-0-465-02493-3')
 print(bib)
 ```
 

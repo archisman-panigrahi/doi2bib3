@@ -26,12 +26,12 @@ from doi2bib3.io import save_bibtex_to_file
 def build_parser():
     """Build the command-line parser."""
     p = argparse.ArgumentParser(
-        description="Fetch BibTeX by DOI, DOI URL, arXiv id or arXiv URL"
+        description="Fetch BibTeX by DOI, ISBN, arXiv id/URL, publisher URL or title"
     )
     p.add_argument(
         "identifier",
         nargs="?",
-        help="DOI, DOI URL, arXiv id/URL, or publisher URL",
+        help="DOI, ISBN, arXiv id/URL, publisher URL, or title",
     )
     p.add_argument("-o", "--out", help="Write .bib file to this path")
     p.add_argument(
