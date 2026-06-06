@@ -279,13 +279,26 @@ For each entry:
 6. Title formatting:
 - Unicode-normalize the title to NFC.
 - Convert embedded inline MathML blocks to LaTeX math with `mathml_to_latex()`.
+- Convert simple HTML italic tags such as `<i>v</i>` to `\textit{v}` with
+  `html_italics_to_latex()`.
+- Convert `\{\var...\}` placeholders to math form with dollars.
+- Normalize plus/minus notation:
+  - outside math: `+-` or `±` -> `$\pm$`
+  - inside existing `$...$` math: `+-` or `±` -> `\pm`
 - Convert compact plain-text chemical formulas to LaTeX math with
   `chemical_formulas_to_latex()`.
-- Convert `\{\var...\}` placeholders to math form with dollars.
+- Insert spaces around inline `$...$` math spans when provider titles attach
+  math directly to neighboring words.
+- Escape title LaTeX-special characters `&`, `%`, and `#`, without
+  double-escaping already escaped forms; HTML entities such as `&amp;` are
+  decoded first.
+- Collapse ASCII whitespace runs in titles to a single space.
 - Protect capitalized words by wrapping with `{...}`.
-- Implemented by `mathml_to_latex()`, `chemical_formulas_to_latex()`,
-  `insert_dollars()`, and `protect_capitalized_words()` called in
-  `normalize_bibtex()`.
+- Implemented by `mathml_to_latex()`, `html_italics_to_latex()`,
+  `insert_dollars()`, `plus_minus_to_latex()`,
+  `chemical_formulas_to_latex()`, `ensure_space_around_math()`,
+  `escape_latex_chars()`, `normalize_title_whitespace()`, and
+  `protect_capitalized_words()` called in `normalize_bibtex()`.
 
 ### 6.1 Inline MathML title conversion
 
@@ -398,6 +411,23 @@ Known intentional limits:
 - It avoids scanning existing LaTeX math spans, so provider-supplied correct
   math is preserved as-is.
 
+### 6.3 HTML, spacing, and LaTeX-special title cleanup
+
+Some provider BibTeX contains lightweight HTML and raw LaTeX-special
+characters in titles. The title cleanup passes are generic and not
+publisher-specific:
+
+- `<i>...</i>` spans become `\textit{...}`.
+- `+-` and `±` become `\pm` inside existing math and `$\pm$` outside math.
+- Inline math spans are separated from adjacent text, for example
+  `in${...}$` -> `in ${...}$` and `${s}_{\pm}$Pairing` ->
+  `${s}_{\pm}$ Pairing`.
+- Raw `&`, `%`, and `#` in titles are escaped as `\&`, `\%`, and `\#`.
+  Already escaped versions are left unchanged.
+- HTML entities are decoded before escaping, so `&amp;` becomes `\&`.
+- Provider newlines and repeated ASCII spaces in titles are collapsed to a
+  single space.
+
 7. Journal formatting:
 - apply abbreviation mapping from bundled JSON dictionaries:
   - `APS_replacement.json`
@@ -405,6 +435,7 @@ Known intentional limits:
   - `IOP_replacement.json`
 - Mapping load: `_load_journal_replacements()` at import time
 - Abbreviation lookup: `abbreviate_journal_name()`
+- HTML entities are decoded and raw `&` is escaped as `\&`.
 - Applied inside `normalize_bibtex()`
 
 Publisher-specific note:
