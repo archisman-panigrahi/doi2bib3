@@ -213,3 +213,7 @@ This project is distributed under the GNU General Public License v3 (GPL-3.0-onl
 ## Acknowledgements
 
 Parts of the code and documentation were assisted by copilot and codex.
+
+## Future plans
+
+Fix common pitfals listed in https://tex.stackexchange.com/q/386053/78560. This is tracked in [todo.md](./todo.md).
