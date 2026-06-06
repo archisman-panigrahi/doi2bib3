@@ -381,6 +381,23 @@ def chemical_formulas_to_latex(value: str) -> str:
     return "".join(parts)
 
 
+def ensure_space_around_math(title: str) -> str:
+    """Separate inline math from neighboring title text."""
+    def _space_math_match(match: re.Match) -> str:
+        start, end = match.span()
+        before = title[start - 1] if start else ""
+        after = title[end] if end < len(title) else ""
+        prefix = " " if before and not before.isspace() and before not in "([{" else ""
+        suffix = (
+            " "
+            if after and after != "$" and not after.isspace() and after not in ".,;:!?)]}"
+            else ""
+        )
+        return prefix + match.group(0) + suffix
+
+    return re.sub(r"(?<!\\)\$(?:\\.|[^$])*(?<!\\)\$", _space_math_match, title)
+
+
 def ascii_for_bibtex_key(value: str) -> str:
     value = unicodedata.normalize("NFD", value.translate(ASCII_BIBTEX_KEY_CHARS))
     return "".join(char for char in value if not unicodedata.combining(char))
@@ -497,6 +514,7 @@ def normalize_bibtex(
             entry["title"] = mathml_to_latex(entry["title"])
             entry["title"] = chemical_formulas_to_latex(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
+            entry["title"] = ensure_space_around_math(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
 
         if "journal" in entry:

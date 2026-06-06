@@ -120,6 +120,22 @@ def test_normalize_bibtex_subscripts_plain_text_chemical_formula_title():
     )
 
 
+def test_normalize_bibtex_inserts_space_before_inline_math_title():
+    raw = r"""@article{Zhang_2014,
+ title={Observation of Momentum-Confined In-Gap Impurity State in${\mathrm{Ba}}_{0.6}{K}_{0.4}{\mathrm{Fe}}_{2}{\mathrm{As}}_{2}$: Evidence for Antiphase${s}_{±}$Pairing},
+ author={Zhang, P.},
+ journal={Physical Review X},
+ year={2014},
+ url={https://doi.org/10.1103/physrevx.4.031001}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"in ${\mathrm{Ba}}_{0.6}{K}_{0.4}{\mathrm{Fe}}_{2}{\mathrm{As}}_{2}$" in out
+    assert r"{Antiphase} ${s}_{±}$ {Pairing}" in out
+
+
 @pytest.mark.imported
 @pytest.mark.parametrize(
     "doi, raw, expected_id, expected_author_parts, expected_title_parts",
