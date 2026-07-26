@@ -87,6 +87,29 @@ def test_iopscience_pdf_url_resolves_doi_without_pdf_suffix():
 
 
 @pytest.mark.imported
+def test_nature_article_url_resolves_doi_from_article_slug():
+    doi = "10.1038/s41598-024-54821-3"
+    article_url = "https://www.nature.com/articles/s41598-024-54821-3"
+
+    assert backend._resolve_identifier_to_doi(article_url) == doi
+
+
+@pytest.mark.imported
+def test_nature_article_url_does_not_scrape_unrelated_doi(monkeypatch):
+    article_url = "https://www.nature.com/articles/s41598-024-54821-3"
+
+    def unexpected_get(*args, **kwargs):
+        raise AssertionError("Nature article URL should resolve without a network request")
+
+    monkeypatch.setattr(backend.requests, "get", unexpected_get)
+
+    assert (
+        backend._resolve_identifier_to_doi(article_url)
+        == "10.1038/s41598-024-54821-3"
+    )
+
+
+@pytest.mark.imported
 def test_iopscience_pdf_url_fetches_bibtex_for_resolved_doi(monkeypatch):
     called_urls = []
     doi = "10.1088/1402-4896/ad995f"

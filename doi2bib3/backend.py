@@ -244,6 +244,12 @@ def _doi_candidates_from_url_path(url: str) -> list[str]:
         return []
 
     netloc = parsed.netloc.lower()
+
+    if netloc in ("nature.com", "www.nature.com"):
+        match = re.match(r"^/articles/([^/?#]+)/?$", path, flags=re.I)
+        if match:
+            return [f"10.1038/{match.group(1)}"]
+
     if (
         netloc in ("iopscience.iop.org", "www.iopscience.iop.org")
         and path.lower().endswith("/pdf")
