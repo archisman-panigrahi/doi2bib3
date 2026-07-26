@@ -324,6 +324,16 @@ def _mathml_element_to_latex(element: ET.Element) -> str:
     if tag == "mrow" or (children and tag not in {"msub", "msup", "msubsup"}):
         return "".join(_mathml_element_to_latex(child) for child in children)
     if tag == "mi":
+        math_variant = next(
+            (
+                value.lower()
+                for attribute, value in element.attrib.items()
+                if _local_name(attribute).lower() == "mathvariant"
+            ),
+            "",
+        )
+        if math_variant in {"normal", "upright"}:
+            return r"\mathrm{" + _latex_escape(text) + "}"
         return GREEK_LATEX.get(
             text,
             r"\mathrm{" + text + "}"

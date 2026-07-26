@@ -101,6 +101,23 @@ def test_normalize_bibtex_converts_inline_mathml_title_to_latex():
     assert "http://www.w3.org" not in out
 
 
+def test_normalize_bibtex_preserves_upright_mathml_chemical_elements():
+    raw = """@article{Tennakoon_2017,
+ title={Elasticity of <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>Pb</mml:mi><mml:mo>[</mml:mo><mml:mo>(</mml:mo><mml:mi mathvariant="normal">M</mml:mi><mml:msub><mml:mi mathvariant="normal">g</mml:mi><mml:mn>0.33</mml:mn></mml:msub><mml:mi mathvariant="normal">N</mml:mi><mml:msub><mml:mi mathvariant="normal">b</mml:mi><mml:mn>0.67</mml:mn></mml:msub><mml:mo>)</mml:mo><mml:msub><mml:mn>1</mml:mn><mml:mrow><mml:mn>1</mml:mn><mml:mo>−</mml:mo><mml:mi>x</mml:mi></mml:mrow></mml:msub><mml:mi mathvariant="normal">T</mml:mi><mml:msub><mml:mi mathvariant="normal">i</mml:mi><mml:mi>x</mml:mi></mml:msub><mml:mo>]</mml:mo><mml:msub><mml:mi mathvariant="normal">O</mml:mi><mml:mn>3</mml:mn></mml:msub></mml:mrow></mml:math>},
+ author={Tennakoon, Sumudu},
+ journal={Physical Review B},
+ year={2017}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    for element_letter in "MgNbTiO":
+        assert rf"\mathrm{{{element_letter}}}" in out
+    assert r"\mathrm{Pb}" in out
+    assert r"\mathrm{x}" not in out
+
+
 def test_normalize_bibtex_subscripts_plain_text_chemical_formula_title():
     raw = """@article{Tromp_2023,
  title={Puddle formation and persistent gaps across the non-mean-field breakdown of superconductivity in overdoped (Pb,Bi)2Sr2CuO6+δ},
