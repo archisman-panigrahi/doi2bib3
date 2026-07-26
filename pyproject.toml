@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "doi2bib3"
-version = "1.4.0"
-description = "Fetch BibTeX from DOI, arXiv ID, journal URL and article title, and verify references against CrossRef/arXiv"
+version = "1.4.2"
+description = "Fetch BibTeX from DOI, arXiv ID, journal URL and article title"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]

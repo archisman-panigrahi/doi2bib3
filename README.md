@@ -25,6 +25,7 @@ A cross-platform **GUI frontend** is available: Check out [QuickBib](https://arc
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/python:doi2bib3.svg?columns=3)](https://repology.org/project/python:doi2bib3/versions)
 
+[![PyPI - Version](https://img.shields.io/pypi/v/doi2bib3?color=67bed9)](https://pypi.org/project/doi2bib3/)
 
 ### Install from pypi
 
@@ -201,8 +202,8 @@ from verification, `verify_entry` / `verify_entries` for finer control, and
 
 ## Supported journal groups
 
-`doi2bib3` directly supports many APS, AMS, ACS, Nature, PNAS, SciPost, ScienceDirect and IOP groups of journals.
-For other journals, the DOI link works, but the paper's URL would not work..
+`doi2bib3` directly supports many APS, AMS, ACS, Nature, Science, PNAS, SciPost, ScienceDirect and IOP groups of journals.
+For other journals, the DOI link works, but the paper's URL would not work.
 
 ## Programmatic usage
 
@@ -277,3 +278,7 @@ This project is distributed under the GNU General Public License v3 (GPL-3.0-onl
 ## Acknowledgements
 
 Parts of the code and documentation were assisted by copilot and codex.
+
+## Future plans
+
+Fix common pitfals listed in https://tex.stackexchange.com/q/386053/78560. This is tracked in [todo.md](./todo.md).

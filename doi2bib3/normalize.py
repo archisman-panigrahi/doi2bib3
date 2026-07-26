@@ -16,6 +16,7 @@
 """BibTeX normalization helpers."""
 
 from typing import Optional
+import html
 import json
 import unicodedata
 import os
@@ -198,6 +199,30 @@ def abbreviate_journal_name(journal: str) -> str:
     return journal
 
 
+def escape_latex_chars(value: str, chars: str) -> str:
+    value = html.unescape(value)
+    return re.sub(rf"(?<!\\)([{re.escape(chars)}])", r"\\\1", value)
+
+
+def html_italics_to_latex(value: str) -> str:
+    if "<i" not in value.lower():
+        return value
+
+    return re.sub(
+        r"<i\b[^>]*>(.*?)</i>",
+        lambda match: r"\textit{" + match.group(1).strip() + "}",
+        value,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def normalize_title_whitespace(title: str) -> str:
+    if not re.search(r"[ \t\r\n\f\v]{2,}|[\t\r\n\f\v]", title):
+        return title.strip()
+
+    return re.sub(r"[ \t\r\n\f\v]+", " ", title).strip()
+
+
 def insert_dollars(title: str) -> str:
     return VAR_RE.sub(r"\\1$\\2$\\3", title)
 
@@ -299,6 +324,16 @@ def _mathml_element_to_latex(element: ET.Element) -> str:
     if tag == "mrow" or (children and tag not in {"msub", "msup", "msubsup"}):
         return "".join(_mathml_element_to_latex(child) for child in children)
     if tag == "mi":
+        math_variant = next(
+            (
+                value.lower()
+                for attribute, value in element.attrib.items()
+                if _local_name(attribute).lower() == "mathvariant"
+            ),
+            "",
+        )
+        if math_variant in {"normal", "upright"}:
+            return r"\mathrm{" + _latex_escape(text) + "}"
         return GREEK_LATEX.get(
             text,
             r"\mathrm{" + text + "}"
@@ -379,6 +414,44 @@ def chemical_formulas_to_latex(value: str) -> str:
     for idx in range(0, len(parts), 2):
         parts[idx] = CHEMICAL_FORMULA_RE.sub(_convert_chemical_formula_match, parts[idx])
     return "".join(parts)
+
+
+def plus_minus_to_latex(value: str) -> str:
+    if "+-" not in value and "±" not in value:
+        return value
+
+    parts = re.split(r"(\$[^$]*\$)", value)
+    for idx, part in enumerate(parts):
+        replacement = r"\pm" if idx % 2 else r"$\pm$"
+        parts[idx] = part.replace("+-", replacement).replace("±", replacement)
+    return "".join(parts)
+
+
+def ensure_space_around_math(title: str) -> str:
+    """Separate inline math from neighboring title text."""
+    def _space_math_match(match: re.Match) -> str:
+        start, end = match.span()
+        before = title[start - 1] if start else ""
+        after = title[end] if end < len(title) else ""
+        prefix = " " if before and not before.isspace() and before not in "([{" else ""
+        suffix = (
+            " "
+            if after and after != "$" and not after.isspace() and after not in ".,;:!?)]}"
+            else ""
+        )
+        return prefix + match.group(0) + suffix
+
+    return re.sub(r"(?<!\\)\$(?:\\.|[^$])*(?<!\\)\$", _space_math_match, title)
+
+
+def display_math_to_inline(title: str) -> str:
+    """Use inline delimiters for display-math spans embedded in a title."""
+    return re.sub(
+        r"(?<!\\)\$\$[ \t\r\n\f\v]*(.*?)[ \t\r\n\f\v]*(?<!\\)\$\$",
+        lambda match: f"${match.group(1)}$",
+        title,
+        flags=re.DOTALL,
+    )
 
 
 def ascii_for_bibtex_key(value: str) -> str:
@@ -495,12 +568,19 @@ def normalize_bibtex(
         if "title" in entry:
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
             entry["title"] = mathml_to_latex(entry["title"])
-            entry["title"] = chemical_formulas_to_latex(entry["title"])
+            entry["title"] = html_italics_to_latex(entry["title"])
+            entry["title"] = display_math_to_inline(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
+            entry["title"] = plus_minus_to_latex(entry["title"])
+            entry["title"] = chemical_formulas_to_latex(entry["title"])
+            entry["title"] = ensure_space_around_math(entry["title"])
+            entry["title"] = escape_latex_chars(entry["title"], "&%#")
+            entry["title"] = normalize_title_whitespace(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
 
         if "journal" in entry:
             entry["journal"] = abbreviate_journal_name(entry["journal"])
+            entry["journal"] = escape_latex_chars(entry["journal"], "&")
 
         if "month" in entry:
             entry["month"] = entry["month"].strip()

@@ -97,13 +97,16 @@ flowchart TD
     J --> K
     K --> L[Title NFC normalization]
     L --> M[Convert inline MathML to LaTeX math]
-    M --> N[Convert plain chemical formulas to LaTeX math]
-    N --> O[Title transforms insert_dollars and protect capitals]
-    O --> P[Journal abbreviation mapping]
-    P --> Q[Month brace cleanup]
-    Q --> R[Special char to LaTeX encoding]
-    R --> S[bibtexparser.dumps]
-    S --> T[Normalized BibTeX]
+    M --> N[Convert HTML italics to LaTeX textit]
+    N --> O[Insert dollar math and normalize plus/minus]
+    O --> P[Convert plain chemical formulas to LaTeX math]
+    P --> Q[Space inline math and escape title specials]
+    Q --> R[Collapse title whitespace and protect capitals]
+    R --> U[Journal abbreviation and ampersand escaping]
+    U --> V[Month brace cleanup]
+    V --> W[Special char to LaTeX encoding]
+    W --> X[bibtexparser.dumps]
+    X --> Y[Normalized BibTeX]
 ```
 
 ## 5) Function Map (Quick Reference)

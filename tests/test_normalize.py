@@ -101,6 +101,23 @@ def test_normalize_bibtex_converts_inline_mathml_title_to_latex():
     assert "http://www.w3.org" not in out
 
 
+def test_normalize_bibtex_preserves_upright_mathml_chemical_elements():
+    raw = """@article{Tennakoon_2017,
+ title={Elasticity of <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>Pb</mml:mi><mml:mo>[</mml:mo><mml:mo>(</mml:mo><mml:mi mathvariant="normal">M</mml:mi><mml:msub><mml:mi mathvariant="normal">g</mml:mi><mml:mn>0.33</mml:mn></mml:msub><mml:mi mathvariant="normal">N</mml:mi><mml:msub><mml:mi mathvariant="normal">b</mml:mi><mml:mn>0.67</mml:mn></mml:msub><mml:mo>)</mml:mo><mml:msub><mml:mn>1</mml:mn><mml:mrow><mml:mn>1</mml:mn><mml:mo>−</mml:mo><mml:mi>x</mml:mi></mml:mrow></mml:msub><mml:mi mathvariant="normal">T</mml:mi><mml:msub><mml:mi mathvariant="normal">i</mml:mi><mml:mi>x</mml:mi></mml:msub><mml:mo>]</mml:mo><mml:msub><mml:mi mathvariant="normal">O</mml:mi><mml:mn>3</mml:mn></mml:msub></mml:mrow></mml:math>},
+ author={Tennakoon, Sumudu},
+ journal={Physical Review B},
+ year={2017}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    for element_letter in "MgNbTiO":
+        assert rf"\mathrm{{{element_letter}}}" in out
+    assert r"\mathrm{Pb}" in out
+    assert r"\mathrm{x}" not in out
+
+
 def test_normalize_bibtex_subscripts_plain_text_chemical_formula_title():
     raw = """@article{Tromp_2023,
  title={Puddle formation and persistent gaps across the non-mean-field breakdown of superconductivity in overdoped (Pb,Bi)2Sr2CuO6+δ},
@@ -118,6 +135,178 @@ def test_normalize_bibtex_subscripts_plain_text_chemical_formula_title():
         r"$(\mathrm{Pb},\mathrm{Bi})_{2}\mathrm{Sr}_{2}\mathrm{Cu}\mathrm{O}_{6+\delta}$"
         in out
     )
+
+
+def test_normalize_bibtex_inserts_space_before_inline_math_title():
+    raw = r"""@article{Zhang_2014,
+ title={Observation of Momentum-Confined In-Gap Impurity State in${\mathrm{Ba}}_{0.6}{K}_{0.4}{\mathrm{Fe}}_{2}{\mathrm{As}}_{2}$: Evidence for Antiphase${s}_{±}$Pairing},
+ author={Zhang, P.},
+ journal={Physical Review X},
+ year={2014},
+ url={https://doi.org/10.1103/physrevx.4.031001}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"in ${\mathrm{Ba}}_{0.6}{K}_{0.4}{\mathrm{Fe}}_{2}{\mathrm{As}}_{2}$" in out
+    assert r"{Antiphase} ${s}_{\pm}$ {Pairing}" in out
+
+
+def test_normalize_bibtex_converts_display_math_in_title_to_inline_math():
+    raw = r"""@article{Tyner_2024,
+ title={{Three-dimensional} $$ {\mathbb {Z}} $$ topological insulators without reflection symmetry},
+ author={Tyner, Alexander C. and Juri\v{c}i\'{c}, Vladimir},
+ journal={Scientific Reports},
+ year={2024},
+ url={https://doi.org/10.1038/s41598-024-54821-3}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"$${\mathbb {Z}}$$" not in out
+    assert r"$ {\mathbb {Z}} $" not in out
+    assert r"${\mathbb {Z}}$" in out
+
+
+def test_normalize_bibtex_converts_plus_minus_title_text_to_latex():
+    raw = """@article{Example_2026,
+ title={Critical temperature Tc+-2 K in a sample},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{Tc} $\pm$ 2 {K}" in out
+
+
+def test_normalize_bibtex_converts_plus_minus_inside_math_title():
+    raw = r"""@article{Example_2026,
+ title={Antiphase ${s}_{+-}$ pairing},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"${s}_{\pm}$ pairing" in out
+
+
+def test_normalize_bibtex_escapes_ampersands_in_journal_names():
+    raw = r"""@article{Delbroek_2026,
+ title={Effects on stars},
+ author={Delbroek, L.},
+ journal={Astronomy &amp; Astrophysics},
+ year={2026},
+ url={https://doi.org/10.1051/0004-6361/202660102}
+}
+
+@article{Example_2026,
+ title={Social example},
+ author={Example, A.},
+ journal={Energy Research & Social Science},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+
+@article{Escaped_2026,
+ title={Already escaped},
+ author={Escaped, A.},
+ journal={Politics \& Society},
+ year={2026},
+ url={https://doi.org/10.1103/escaped}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"journal = {Astronomy \& Astrophysics}" in out
+    assert r"journal = {Energy Research \& Social Science}" in out
+    assert r"journal = {Politics \& Society}" in out
+    assert r"\\&" not in out
+    assert "&amp;" not in out
+
+
+def test_normalize_bibtex_escapes_ampersands_in_titles():
+    raw = r"""@article{Example_2026,
+ title={R&D and energy &amp; society with politics \& policy},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{R}\&{D} and energy \& society with politics \& policy" in out
+    assert r"\\&" not in out
+    assert "&amp;" not in out
+
+
+def test_normalize_bibtex_escapes_percent_signs_in_titles():
+    raw = r"""@article{Harlass_2024,
+ title={Measurement report: 100% sustainable aviation fuel and already escaped 50\% fuel},
+ author={Harlass, Theresa},
+ journal={Atmospheric Chemistry and Physics},
+ year={2024},
+ url={https://doi.org/10.5194/acp-24-11807-2024}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"100\% sustainable aviation fuel" in out
+    assert r"50\% fuel" in out
+    assert r"\\%" not in out
+
+
+def test_normalize_bibtex_escapes_hash_signs_in_titles():
+    raw = r"""@article{Example_2026,
+ title={Sample #1 and already escaped sample \#2},
+ author={Example, A.},
+ journal={Physical Review B},
+ year={2026},
+ url={https://doi.org/10.1103/example}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{Sample} \#1" in out
+    assert r"sample \#2" in out
+    assert r"\\#" not in out
+
+
+def test_normalize_bibtex_converts_html_italics_in_titles_to_latex():
+    raw = """@article{Delbroek_2026,
+ title={Effects on
+<i>v</i>
+sin
+<i>i</i>
+determinations of O stars},
+ author={Delbroek, L.},
+ journal={Astronomy &amp; Astrophysics},
+ year={2026},
+ url={https://doi.org/10.1051/0004-6361/202660102}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"{Effects} on \textit{v} sin \textit{i} determinations" in out
+    assert r"\textit{v}" in out
+    assert r"\textit{i}" in out
+    assert "<i>" not in out
+    assert "</i>" not in out
 
 
 @pytest.mark.imported
