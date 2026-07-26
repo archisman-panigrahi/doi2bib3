@@ -153,6 +153,23 @@ def test_normalize_bibtex_inserts_space_before_inline_math_title():
     assert r"{Antiphase} ${s}_{\pm}$ {Pairing}" in out
 
 
+def test_normalize_bibtex_converts_display_math_in_title_to_inline_math():
+    raw = r"""@article{Tyner_2024,
+ title={{Three-dimensional} $$ {\mathbb {Z}} $$ topological insulators without reflection symmetry},
+ author={Tyner, Alexander C. and Juri\v{c}i\'{c}, Vladimir},
+ journal={Scientific Reports},
+ year={2024},
+ url={https://doi.org/10.1038/s41598-024-54821-3}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"$${\mathbb {Z}}$$" not in out
+    assert r"$ {\mathbb {Z}} $" not in out
+    assert r"${\mathbb {Z}}$" in out
+
+
 def test_normalize_bibtex_converts_plus_minus_title_text_to_latex():
     raw = """@article{Example_2026,
  title={Critical temperature Tc+-2 K in a sample},

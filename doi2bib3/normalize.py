@@ -444,6 +444,16 @@ def ensure_space_around_math(title: str) -> str:
     return re.sub(r"(?<!\\)\$(?:\\.|[^$])*(?<!\\)\$", _space_math_match, title)
 
 
+def display_math_to_inline(title: str) -> str:
+    """Use inline delimiters for display-math spans embedded in a title."""
+    return re.sub(
+        r"(?<!\\)\$\$[ \t\r\n\f\v]*(.*?)[ \t\r\n\f\v]*(?<!\\)\$\$",
+        lambda match: f"${match.group(1)}$",
+        title,
+        flags=re.DOTALL,
+    )
+
+
 def ascii_for_bibtex_key(value: str) -> str:
     value = unicodedata.normalize("NFD", value.translate(ASCII_BIBTEX_KEY_CHARS))
     return "".join(char for char in value if not unicodedata.combining(char))
@@ -559,6 +569,7 @@ def normalize_bibtex(
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
             entry["title"] = mathml_to_latex(entry["title"])
             entry["title"] = html_italics_to_latex(entry["title"])
+            entry["title"] = display_math_to_inline(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
             entry["title"] = plus_minus_to_latex(entry["title"])
             entry["title"] = chemical_formulas_to_latex(entry["title"])
