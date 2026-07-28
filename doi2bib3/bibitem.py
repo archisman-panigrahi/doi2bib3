@@ -113,7 +113,8 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
 
     journal = entry.get("journal") or entry.get("booktitle")
     if not journal and not is_arxiv:
-        journal = entry.get("publisher")
+        # Theses carry the institution in school rather than publisher.
+        journal = entry.get("school") or entry.get("publisher")
     volume = entry.get("volume", "")
     year = entry.get("year", "")
     doi = _doi_from_entry(entry)

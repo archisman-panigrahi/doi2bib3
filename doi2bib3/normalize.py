@@ -98,6 +98,13 @@ _MONTH_STRING_DEFINITIONS = """@string{jan = \"January\"}
 
 VAR_RE = re.compile(r"(\\{)(\\var[A-Z]?[a-z]*)(\\})")
 
+THESIS_ENTRY_TYPES = {"phdthesis", "mastersthesis"}
+SCHOOL_SOURCE_FIELDS = ("school", "institution", "publisher")
+REPOSITORY_WRAPPER_RE = re.compile(
+    r"^.*?\bRepository\s+(?:at|of)\s+(?:the\s+)?(?P<school>.+)$",
+    flags=re.I,
+)
+
 ASCII_BIBTEX_KEY_CHARS = str.maketrans(
     {
         "ß": "ss",
@@ -197,6 +204,30 @@ def abbreviate_journal_name(journal: str) -> str:
             return abbrev
 
     return journal
+
+
+def strip_repository_wrapper(name: str) -> str:
+    """Reduce a repository name to the institution behind it.
+
+    Thesis metadata often names the hosting repository ("Digital Repository at
+    the University of Maryland") where BibTeX wants the awarding institution.
+    """
+    match = REPOSITORY_WRAPPER_RE.match(name.strip())
+    return match.group("school").strip() if match else name.strip()
+
+
+def thesis_school(entry: dict[str, str]) -> Optional[str]:
+    """Return the awarding institution recorded on a thesis entry.
+
+    ``school`` is a required field of ``@phdthesis``/``@mastersthesis``, but
+    DataCite records the repository as ``publisher`` and leaves ``school``
+    unset, so BibTeX warns "missing school in <key>".
+    """
+    for field in SCHOOL_SOURCE_FIELDS:
+        value = entry.get(field, "").strip()
+        if value:
+            return strip_repository_wrapper(value)
+    return None
 
 
 def escape_latex_chars(value: str, chars: str) -> str:
@@ -577,6 +608,14 @@ def normalize_bibtex(
             entry["title"] = escape_latex_chars(entry["title"], "&%#")
             entry["title"] = normalize_title_whitespace(entry["title"])
             entry["title"] = protect_capitalized_words(entry["title"])
+
+        if entry.get("ENTRYTYPE", "").lower() in THESIS_ENTRY_TYPES:
+            school = thesis_school(entry)
+            if school:
+                # BibTeX ignores publisher/institution on thesis entries.
+                entry.pop("institution", None)
+                entry.pop("publisher", None)
+                entry["school"] = escape_latex_chars(school, "&")
 
         if "journal" in entry:
             entry["journal"] = abbreviate_journal_name(entry["journal"])

@@ -143,6 +143,24 @@ def test_format_bibtex_to_aps_bibitem_keeps_non_aps_page_ranges():
     )
 
 
+def test_format_bibtex_to_aps_bibitem_uses_thesis_school():
+    bib = r"""@phdthesis{Liao_investigation_2019,
+ author = {Liao, Wan-Ting},
+ school = {University of Maryland},
+ title = {{Investigation} of tunneling in superconductors},
+ url = {http://drum.lib.umd.edu/handle/1903/22117},
+ year = {2019}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Liao_investigation_2019}\n"
+        "W. T. Liao, Investigation of tunneling in superconductors, "
+        "University of Maryland, "
+        "http://drum.lib.umd.edu/handle/1903/22117 (2019).\n"
+    )
+
+
 def test_format_bibtex_to_aps_bibitem_rejects_empty_bibtex():
     with pytest.raises(DOIError):
         format_bibtex_to_aps_bibitem("")
