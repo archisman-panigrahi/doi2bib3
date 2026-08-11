@@ -102,11 +102,16 @@ flowchart TD
     O --> P[Convert plain chemical formulas to LaTeX math]
     P --> Q[Space inline math and escape title specials]
     Q --> R[Collapse title whitespace and protect capitals]
-    R --> U[Journal abbreviation and ampersand escaping]
-    U --> V[Month brace cleanup]
-    V --> W[Special char to LaTeX encoding]
-    W --> X[bibtexparser.dumps]
-    X --> Y[Normalized BibTeX]
+    R --> S{PhD or masters thesis?}
+    S -->|Yes| T[Set school from school institution or publisher]
+    S -->|No| U[Continue]
+    T --> V[Strip repository wrapper and remove institution/publisher]
+    V --> U
+    U --> W[Journal abbreviation and ampersand escaping]
+    W --> X[Month brace cleanup]
+    X --> Y[Special char to LaTeX encoding]
+    Y --> Z[bibtexparser.dumps]
+    Z --> AA[Normalized BibTeX]
 ```
 
 ## 5) Function Map (Quick Reference)
@@ -119,5 +124,6 @@ flowchart TD
 - URL DOI extraction: `doi2bib3/backend.py` -> `_extract_doi_from_publisher_url()`, `_extract_doi_from_sciencedirect_url()`
 - Fetch raw BibTeX: `doi2bib3/backend.py` -> `_fetch_bibtex_for_doi()`
 - Normalize BibTeX: `doi2bib3/normalize.py` -> `normalize_bibtex()`
+- Normalize thesis school: `doi2bib3/normalize.py` -> `thesis_school()`, `strip_repository_wrapper()`
 - Format APS/RevTeX bibitem: `doi2bib3/bibitem.py` -> `format_bibtex_to_aps_bibitem()`
 - Write output file: `doi2bib3/io.py` -> `save_bibtex_to_file()`

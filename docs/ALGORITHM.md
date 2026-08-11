@@ -43,6 +43,8 @@ Given user input:
 
 6. If `-b/--bibitem` is set:
 - format the fetched BibTeX as an APS/RevTeX-style `\bibitem`
+- for thesis entries, display `school` in the position normally occupied by
+  the journal or publisher
 - print it to stdout after the BibTeX output or after the `Wrote <path>` message
 - if formatting fails, print a warning to stderr but keep exit code 0
 - the `\bibitem` is not written to `-o/--out`
@@ -428,7 +430,22 @@ publisher-specific:
 - Provider newlines and repeated ASCII spaces in titles are collapsed to a
   single space.
 
-7. Journal formatting:
+7. Thesis school normalization:
+- for `@phdthesis` and `@mastersthesis` entries, choose the awarding
+  institution from the first non-empty field in this order:
+  - `school`
+  - `institution`
+  - `publisher`
+- remove repository wrappers such as
+  `Digital Repository at the University of Maryland`, leaving
+  `University of Maryland`
+- store the result in `school` and remove `institution` and `publisher`, which
+  BibTeX does not use for thesis entries
+- escape raw `&` in the resulting school name
+- implemented by `thesis_school()`, `strip_repository_wrapper()`, and the
+  thesis block inside `normalize_bibtex()`
+
+8. Journal formatting:
 - apply abbreviation mapping from bundled JSON dictionaries:
   - `APS_replacement.json`
   - `Nature_replacement.json`
@@ -444,11 +461,11 @@ Publisher-specific note:
 - Crossref article-number enrichment and APS/Nature/IOP journal abbreviations are part of
   BibTeX normalization, after raw BibTeX has already been fetched.
 
-8. Month cleanup:
+9. Month cleanup:
 - strip outer braces `{January}` -> `January`
 - Implemented in month block inside `normalize_bibtex()`
 
-9. Special character encoding:
+10. Special character encoding:
 - apply selected unicode -> LaTeX substitutions in
   - `title`
   - `author`
