@@ -54,6 +54,9 @@ dev = [
 [tool.setuptools.packages.find]
 include = ["doi2bib3*"]
 
+[project.scripts]
+doi2bib3 = "doi2bib3.cli:main"
+
 [tool.setuptools]
 include-package-data = true
 script-files = ["scripts/doi2bib3"]
