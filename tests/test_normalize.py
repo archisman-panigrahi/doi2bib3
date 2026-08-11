@@ -309,6 +309,70 @@ determinations of O stars},
     assert "</i>" not in out
 
 
+def test_normalize_bibtex_fills_missing_thesis_school_from_publisher():
+    raw = """@phdthesis{https://doi.org/10.13016/hepj-rmsu,
+ doi = {10.13016/HEPJ-RMSU},
+ url = {http://drum.lib.umd.edu/handle/1903/22117},
+ author = {Liao, Wan-Ting},
+ title = {Investigation of tunneling in superconductors},
+ publisher = {Digital Repository at the University of Maryland},
+ year = {2019}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert "school = {University of Maryland}" in out
+    assert "publisher" not in out
+
+
+def test_normalize_bibtex_keeps_plain_thesis_publisher_as_school():
+    raw = """@mastersthesis{Doe_2020,
+ author = {Doe, Jane},
+ title = {A masters thesis},
+ publisher = {Energy Research & Social Science Institute},
+ year = {2020}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"school = {Energy Research \& Social Science Institute}" in out
+    assert "publisher" not in out
+
+
+def test_normalize_bibtex_prefers_existing_thesis_school():
+    raw = """@phdthesis{Doe_2020,
+ author = {Doe, Jane},
+ title = {A thesis},
+ school = {Massachusetts Institute of Technology},
+ publisher = {MIT Libraries},
+ year = {2020}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert "school = {Massachusetts Institute of Technology}" in out
+    assert "MIT Libraries" not in out
+
+
+def test_normalize_bibtex_leaves_non_thesis_publisher_untouched():
+    raw = """@article{Doe_2020,
+ author = {Doe, Jane},
+ title = {An article},
+ journal = {Some Journal},
+ publisher = {Digital Repository at the University of Maryland},
+ year = {2020}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert "publisher = {Digital Repository at the University of Maryland}" in out
+    assert "school" not in out
+
+
 @pytest.mark.imported
 @pytest.mark.parametrize(
     "doi, raw, expected_id, expected_author_parts, expected_title_parts",
