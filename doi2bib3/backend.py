@@ -17,9 +17,12 @@
 
 from dataclasses import dataclass
 from typing import Optional
+import json
 import re
 from urllib.parse import quote, unquote, urlparse
 
+import bibtexparser
+from bibtexparser.bibdatabase import BibDatabase
 import requests
 
 from .constants import USER_AGENT
@@ -53,6 +56,71 @@ class ArxivMetadata:
 def _is_http_url(value: str) -> bool:
     lower = value.lower()
     return lower.startswith("http://") or lower.startswith("https://")
+
+
+def _dspace_item_api_url(value: str) -> Optional[str]:
+    """Map a DSpace 7 entity URL to its public item metadata endpoint."""
+    if not _is_http_url(value):
+        return None
+    parsed = urlparse(value)
+    match = re.fullmatch(
+        r"/entities/[^/]+/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})/?",
+        parsed.path,
+        flags=re.I,
+    )
+    if not match:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}/server/api/core/items/{match.group(1)}"
+
+
+def _fetch_dspace_thesis_bibtex(url: str, timeout: int = 15) -> str:
+    """Build thesis BibTeX from a DSpace item's Dublin Core metadata."""
+    api_url = _dspace_item_api_url(url)
+    if not api_url:
+        raise DOIError(f"Invalid DSpace item URL: {url}")
+    try:
+        resp = requests.get(api_url, headers={"User-Agent": USER_AGENT}, timeout=timeout)
+    except Exception as exc:
+        raise DOIError(f"Failed to fetch DSpace metadata: {url}") from exc
+    if resp.status_code != 200:
+        raise DOIError(f"Failed to fetch DSpace metadata: HTTP {resp.status_code}")
+
+    try:
+        metadata = json.loads(_decode_response_text(resp)).get("metadata", {})
+    except (json.JSONDecodeError, AttributeError) as exc:
+        raise DOIError(f"Invalid DSpace metadata response: {url}") from exc
+
+    def values(field: str) -> list[str]:
+        return [item["value"] for item in metadata.get(field, []) if item.get("value")]
+
+    degree = " ".join(
+        values("dc.description.degree")
+        + values("mit.thesis.degree")
+        + values("thesis.degree.name")
+    ).lower()
+    if any(term in degree for term in ("ph.d", "phd", "doctoral", "doctor of philosophy")):
+        entry_type = "phdthesis"
+    elif "master" in degree:
+        entry_type = "mastersthesis"
+    else:
+        raise DOIError(f"DSpace item is not an identified thesis: {url}")
+
+    issued = values("dc.date.issued")
+    entry = {
+        "ENTRYTYPE": entry_type,
+        "ID": "dspace",
+        "author": " and ".join(values("dc.contributor.author")),
+        "title": next(iter(values("dc.title")), ""),
+        "school": next(iter(values("dc.publisher")), ""),
+        "year": issued[0][:4] if issued else "",
+        "url": next(iter(values("dc.identifier.uri")), url),
+    }
+    if not all(entry[field] for field in ("author", "title", "school", "year")):
+        raise DOIError(f"Incomplete DSpace thesis metadata: {url}")
+
+    database = BibDatabase()
+    database.entries = [entry]
+    return bibtexparser.dumps(database)
 
 
 def _decode_response_text(resp: requests.Response) -> str:
@@ -486,6 +554,10 @@ def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
 
 def fetch_bibtex(identifier: str, timeout: int = 15) -> str:
     """Public API: resolve identifier and return normalized BibTeX."""
+    dspace_url = _dspace_item_api_url(identifier)
+    if dspace_url:
+        return normalize_bibtex(_fetch_dspace_thesis_bibtex(identifier, timeout))
+
     doi, arxiv_metadata = _resolve_identifier(identifier, timeout=timeout)
     raw = _fetch_bibtex_for_doi(doi, timeout=timeout)
     try:

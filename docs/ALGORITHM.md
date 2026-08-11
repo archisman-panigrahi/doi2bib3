@@ -57,25 +57,36 @@ If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits co
 
 `fetch_bibtex(identifier, timeout)` does:
 
-1. Resolve input identifier to a DOI string plus optional arXiv metadata.
+1. For a DSpace 7 entity URL, fetch the public item metadata and build thesis
+BibTeX directly; no DOI is required.
+- `_dspace_item_api_url()` and `_fetch_dspace_thesis_bibtex()` in
+  `doi2bib3/backend.py`
+
+2. Otherwise, resolve the input identifier to a DOI string plus optional arXiv metadata.
 - `_resolve_identifier()` in `doi2bib3/backend.py`
 
-2. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
+3. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
 - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
 
-3. Normalize BibTeX fields and formatting.
+4. Normalize BibTeX fields and formatting.
 - `normalize_bibtex()` in `doi2bib3/normalize.py`
 - Unpublished arXiv metadata is passed through only when the arXiv entry has no
   published journal DOI, so published arXiv inputs resolve to the journal DOI
   without adding `archivePrefix`, `eprint`, or `primaryClass`.
 
-4. Return normalized BibTeX text.
+5. Return normalized BibTeX text.
 - `fetch_bibtex()` in `doi2bib3/backend.py`
 - If normalization fails, `fetch_bibtex()` returns raw BibTeX as fallback.
 
 ## 4. Identifier -> DOI resolution
 
 Resolution order is deterministic and is implemented in `_resolve_identifier()` (`doi2bib3/backend.py`).
+
+DSpace 7 entity URLs are handled before DOI resolution. Their UUID is mapped
+to `/server/api/core/items/<uuid>`, and Dublin Core author, title, issue date,
+degree, publisher, and persistent URI metadata are converted directly to
+`@phdthesis` or `@mastersthesis`. Missing or ambiguous thesis metadata raises
+`DOIError` instead of falling through to Crossref.
 
 ### 4.1 Try arXiv parsing first
 
