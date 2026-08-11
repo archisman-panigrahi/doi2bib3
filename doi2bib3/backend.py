@@ -320,6 +320,17 @@ def _extract_doi_from_sciencedirect_url(url: str, timeout: int = 10) -> Optional
     return _first_valid_doi(_doi_candidates_from_html(text))
 
 
+def _aip_minimal_article_url(url: str) -> Optional[str]:
+    """Return AIP's metadata-friendly article URL for a pubs.aip.org URL."""
+    parsed = urlparse(url)
+    if parsed.netloc.lower() != "pubs.aip.org":
+        return None
+    match = re.search(r"/article/(?:[^/]+/){3}(\d+)(?:/|$)", parsed.path)
+    if not match:
+        return None
+    return f"https://aipp.silverchair-cdn.com/article-minimal/{match.group(1)}"
+
+
 def _fetch_html_for_doi_extraction(url: str, timeout: int = 10) -> Optional[str]:
     ua_browser = (
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -354,6 +365,11 @@ def _extract_doi_from_publisher_url(url: str, timeout: int = 10) -> Optional[str
     if doi:
         return doi
 
+    aip_url = _aip_minimal_article_url(url)
+    if aip_url:
+        html = _fetch_html_for_doi_extraction(aip_url, timeout=timeout)
+        return _first_valid_doi(_doi_candidates_from_html(html or ""))
+
     doi = _extract_doi_from_sciencedirect_url(url, timeout=timeout)
     if doi:
         return doi
@@ -375,6 +391,8 @@ def _search_doi_via_crossref(query: str, timeout: int = 15) -> Optional[str]:
         doi = _extract_doi_from_publisher_url(q, timeout=timeout)
         if doi:
             return doi
+        if _aip_minimal_article_url(q):
+            return None
 
     try:
         url = f"https://api.crossref.org/works?query.bibliographic={quote(q)}&rows=5"

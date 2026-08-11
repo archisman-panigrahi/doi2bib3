@@ -79,6 +79,38 @@ def test_sciencedirect_url_fetches_bibtex_for_resolved_doi(monkeypatch):
 
 
 @pytest.mark.imported
+@pytest.mark.parametrize("with_slug", [False, True])
+def test_aip_url_resolves_doi_from_minimal_article(monkeypatch, with_slug):
+    called_urls = []
+    article_url = "https://pubs.aip.org/aip/rsi/article/85/4/043706/357699"
+    if with_slug:
+        article_url += "/A-30-mK-13-5-T-scanning-tunneling-microscope-with"
+    minimal_url = "https://aipp.silverchair-cdn.com/article-minimal/357699"
+    responses = {
+        minimal_url: FakeResponse(
+            text='<meta name="citation_doi" content="10.1063/1.4871056">'
+        ),
+    }
+    _install_fake_get(monkeypatch, responses, called_urls)
+
+    assert backend._resolve_identifier_to_doi(article_url) == "10.1063/1.4871056"
+    assert called_urls[-1] == minimal_url
+
+
+@pytest.mark.imported
+def test_aip_url_does_not_fall_back_to_blind_crossref_search(monkeypatch):
+    called_urls = []
+    article_url = "https://pubs.aip.org/aip/rsi/article/85/4/043706/357699"
+    minimal_url = "https://aipp.silverchair-cdn.com/article-minimal/357699"
+    responses = {minimal_url: FakeResponse(status_code=403)}
+    _install_fake_get(monkeypatch, responses, called_urls)
+
+    with pytest.raises(backend.DOIError):
+        backend._resolve_identifier_to_doi(article_url)
+    assert not any("api.crossref.org/works?" in url for url in called_urls)
+
+
+@pytest.mark.imported
 def test_iopscience_pdf_url_resolves_doi_without_pdf_suffix():
     doi = "10.1088/1402-4896/ad995f"
     article_url = f"https://iopscience.iop.org/article/{doi}/pdf"

@@ -146,7 +146,7 @@ Note: If the tool is not installed, you can run `python scripts/doi2bib3 https:/
 
 ## Supported journal groups
 
-`doi2bib3` directly supports many APS, AMS, ACS, Nature, Science, PNAS, SciPost, ScienceDirect and IOP groups of journals.
+`doi2bib3` directly supports many APS, AMS, ACS, Nature, Science, PNAS, SciPost, ScienceDirect, AIP and IOP groups of journals.
 For other journals, the DOI link works, but the paper's URL would not work.
 
 ## Programmatic usage
