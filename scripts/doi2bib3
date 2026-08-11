@@ -6,7 +6,9 @@ prefer the repository copy of the package over any system-installed one by
 inserting the repository root into ``sys.path`` before importing.
 """
 import argparse
+from importlib.metadata import PackageNotFoundError, version
 import os
+import re
 import sys
 
 # Ensure local repo package is preferred when running the script from the
@@ -23,11 +25,29 @@ from doi2bib3 import fetch_bibtex, format_bibtex_to_aps_bibitem
 from doi2bib3.io import save_bibtex_to_file
 
 
+def get_version():
+    """Return the project version from source or installed package metadata."""
+    pyproject = os.path.join(repo_root, "pyproject.toml")
+    if os.path.isfile(pyproject):
+        with open(pyproject, encoding="utf-8") as f:
+            return re.search(r'^version = "([^"]+)"', f.read(), re.MULTILINE).group(1)
+    try:
+        return version("doi2bib3")
+    except PackageNotFoundError:
+        return "unknown"
+
+
 def build_parser():
     """Build the command-line parser."""
+    current_version = get_version()
     p = argparse.ArgumentParser(
-        description="Fetch BibTeX by DOI, DOI URL, arXiv id or arXiv URL"
+        description=(
+            f"%(prog)s {current_version}\n\n"
+            "Fetch BibTeX by DOI, DOI URL, arXiv id or arXiv URL"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    p.add_argument("--version", action="version", version=f"%(prog)s {current_version}")
     p.add_argument(
         "identifier",
         nargs="?",
