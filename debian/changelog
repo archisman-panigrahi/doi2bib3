@@ -1,3 +1,9 @@
+python-doi2bib3 (1.6.0-1) unstable; urgency=medium
+
+  * support for dspace links
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Sun, 16 Aug 2026 14:17:45 -0400
+
 python-doi2bib3 (1.5.0-1) unstable; urgency=medium
 
   * added support for AIP group of journals and fixed formatting of school in PhD thesis
