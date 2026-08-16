@@ -57,10 +57,13 @@ If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits co
 
 `fetch_bibtex(identifier, timeout)` does:
 
-1. For a DSpace 7 entity URL, fetch the public item metadata and build thesis
-BibTeX directly; no DOI is required.
-- `_dspace_item_api_url()` and `_fetch_dspace_thesis_bibtex()` in
-  `doi2bib3/backend.py`
+1. For a DSpace 7 entity URL or persistent `hdl.handle.net` URL, resolve the
+item and fetch its public metadata. If degree metadata identifies a thesis,
+build thesis BibTeX directly. Otherwise, extract the item's DOI and continue
+through the normal DOI fetch path.
+- `_dspace_item_api_url()`, `_resolve_dspace_api_url()`,
+  `_fetch_dspace_metadata()`, `_dspace_thesis_bibtex()`, and
+  `_dspace_item_doi()` in `doi2bib3/backend.py`
 
 2. Otherwise, resolve the input identifier to a DOI string plus optional arXiv metadata.
 - `_resolve_identifier()` in `doi2bib3/backend.py`
@@ -82,11 +85,15 @@ BibTeX directly; no DOI is required.
 
 Resolution order is deterministic and is implemented in `_resolve_identifier()` (`doi2bib3/backend.py`).
 
-DSpace 7 entity URLs are handled before DOI resolution. Their UUID is mapped
-to `/server/api/core/items/<uuid>`, and Dublin Core author, title, issue date,
+DSpace 7 entity and persistent Handle URLs are handled before general DOI
+resolution. Entity UUIDs map directly to `/server/api/core/items/<uuid>`.
+Handle URLs are followed to the owning DSpace installation and resolved through
+`/server/api/pid/find?id=<handle>`. Dublin Core author, title, issue date,
 degree, publisher, and persistent URI metadata are converted directly to
-`@phdthesis` or `@mastersthesis`. Missing or ambiguous thesis metadata raises
-`DOIError` instead of falling through to Crossref.
+`@phdthesis` or `@mastersthesis` when degree metadata identifies a thesis.
+For other items, DOI candidates are read from common identifier and relation
+fields and passed to the standard DOI BibTeX fetcher. An item with neither a
+recognized thesis degree nor a valid DOI raises `DOIError`.
 
 ### 4.1 Try arXiv parsing first
 
