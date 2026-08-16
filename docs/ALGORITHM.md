@@ -57,25 +57,43 @@ If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits co
 
 `fetch_bibtex(identifier, timeout)` does:
 
-1. Resolve input identifier to a DOI string plus optional arXiv metadata.
+1. For a DSpace 7 entity URL or persistent `hdl.handle.net` URL, resolve the
+item and fetch its public metadata. If degree metadata identifies a thesis,
+build thesis BibTeX directly. Otherwise, extract the item's DOI and continue
+through the normal DOI fetch path.
+- `_dspace_item_api_url()`, `_resolve_dspace_api_url()`,
+  `_fetch_dspace_metadata()`, `_dspace_thesis_bibtex()`, and
+  `_dspace_item_doi()` in `doi2bib3/backend.py`
+
+2. Otherwise, resolve the input identifier to a DOI string plus optional arXiv metadata.
 - `_resolve_identifier()` in `doi2bib3/backend.py`
 
-2. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
+3. Fetch BibTeX for that DOI (`doi.org` first, Crossref transform fallback).
 - `_fetch_bibtex_for_doi()` in `doi2bib3/backend.py`
 
-3. Normalize BibTeX fields and formatting.
+4. Normalize BibTeX fields and formatting.
 - `normalize_bibtex()` in `doi2bib3/normalize.py`
 - Unpublished arXiv metadata is passed through only when the arXiv entry has no
   published journal DOI, so published arXiv inputs resolve to the journal DOI
   without adding `archivePrefix`, `eprint`, or `primaryClass`.
 
-4. Return normalized BibTeX text.
+5. Return normalized BibTeX text.
 - `fetch_bibtex()` in `doi2bib3/backend.py`
 - If normalization fails, `fetch_bibtex()` returns raw BibTeX as fallback.
 
 ## 4. Identifier -> DOI resolution
 
 Resolution order is deterministic and is implemented in `_resolve_identifier()` (`doi2bib3/backend.py`).
+
+DSpace 7 entity and persistent Handle URLs are handled before general DOI
+resolution. Entity UUIDs map directly to `/server/api/core/items/<uuid>`.
+Handle URLs are followed to the owning DSpace installation and resolved through
+`/server/api/pid/find?id=<handle>`. Dublin Core author, title, issue date,
+degree, publisher, and persistent URI metadata are converted directly to
+`@phdthesis` or `@mastersthesis` when degree metadata identifies a thesis.
+For other items, DOI candidates are read from common identifier and relation
+fields and passed to the standard DOI BibTeX fetcher. An item with neither a
+recognized thesis degree nor a valid DOI raises `DOIError`.
 
 ### 4.1 Try arXiv parsing first
 

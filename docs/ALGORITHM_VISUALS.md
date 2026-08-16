@@ -10,9 +10,17 @@ flowchart TD
     B -->|CLI| C[scripts/doi2bib3::main]
     B -->|API| D[doi2bib3.fetch_bibtex]
     C --> D
-    D --> E[_resolve_identifier]
+    D --> P{DSpace entity or Handle URL?}
+    P -->|Yes| Q[Resolve Handle if needed and fetch item metadata]
+    P -->|No| E[_resolve_identifier]
+    Q --> R{Thesis degree present?}
+    R -->|Yes| S[Build thesis BibTeX]
+    R -->|No| T{DOI present?}
+    T -->|Yes| F
+    T -->|No| U[Raise DOIError]
     E --> F[_fetch_bibtex_for_doi]
     F --> G[normalize_bibtex]
+    S --> G
     G --> H{Caller}
     H -->|CLI stdout| I[Print BibTeX]
     H -->|CLI -o| J[save_bibtex_to_file append=True]
@@ -118,6 +126,8 @@ flowchart TD
 
 - CLI entry: `scripts/doi2bib3` -> `build_parser()`, `main()`
 - Public API: `doi2bib3/backend.py` -> `fetch_bibtex()`
+- DSpace metadata and Handle resolution: `doi2bib3/backend.py` -> `_dspace_item_api_url()`, `_resolve_dspace_api_url()`, `_fetch_dspace_metadata()`
+- DSpace thesis/DOI selection: `doi2bib3/backend.py` -> `_dspace_thesis_bibtex()`, `_dspace_item_doi()`
 - Resolve identifier: `doi2bib3/backend.py` -> `_resolve_identifier()`, `_resolve_identifier_to_doi()`
 - arXiv parse/query: `doi2bib3/backend.py` -> `_parse_arxiv_id_string()`, `_parse_arxiv_id_from_doi_string()`, `_fetch_arxiv_metadata()`, `_resolve_arxiv_identifier()`
 - Crossref search: `doi2bib3/backend.py` -> `_search_doi_via_crossref()`

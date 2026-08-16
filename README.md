@@ -3,12 +3,14 @@
 doi2bib3 is a small Python utility to fetch BibTeX metadata for a DOI or to
 resolve arXiv identifiers to DOIs and fetch their BibTeX entries. It accepts
 DOI inputs, DOI URLs, arXiv IDs/URLs (modern and legacy), publisher landing
-pages, and uses a sequence of resolution strategies to return a BibTeX string.
+pages, DSpace 7 thesis URLs, and uses a sequence of resolution strategies to
+return a BibTeX string.
 This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/) and [doi2bib2](https://github.com/davidagraf/doi2bib2).
 
 ## Key behaviors
 
-- Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, or article-title text.
+- Accepts DOI, DOI URL, arXiv ID/URL, publisher URL, DSpace 7 thesis URL, or
+  article-title text.
 - Resolves inputs to a DOI using URL metadata, arXiv metadata, Crossref lookup,
   and DOI content negotiation with Crossref fallback.
 - Normalizes BibTeX output, including journal abbreviation mappings and
