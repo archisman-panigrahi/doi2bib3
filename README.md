@@ -14,9 +14,10 @@ This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/
   Handle URL, or article-title text.
 - Resolves inputs to a DOI using URL metadata, arXiv metadata, Crossref lookup,
   and DOI content negotiation with Crossref fallback.
-- Resolves ISBN-10/ISBN-13 inputs through public book metadata providers
-  (Open Library, with Google Books fallback) and returns a normalized `@book`
-  entry.
+- Resolves ISBN-10/ISBN-13 inputs through a keyless public-catalog waterfall
+  (Open Library, Library of Congress, German National Library, Crossref, and
+  Internet Archive), with Google Books as a final fallback, and returns a
+  normalized `@book` entry.
 - Normalizes BibTeX output, including journal abbreviation mappings and
   selected publisher-specific cleanup.
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)

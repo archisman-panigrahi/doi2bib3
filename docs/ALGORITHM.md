@@ -60,8 +60,9 @@ If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits co
 1. Try ISBN parsing first.
 - If the input is a valid ISBN-10 or ISBN-13, fetch public book metadata,
   construct a raw `@book` BibTeX entry, normalize it, and return it.
-- Open Library is tried first; Google Books is used as a fallback if Open
-  Library fails or has no matching result.
+- Open Library is tried first. Library of Congress, German National Library,
+  Crossref, and Internet Archive are then queried in order, with Google Books
+  as the final fallback.
 - Implemented by `_parse_isbn_string()`, `_fetch_bibtex_for_isbn()`, and
   `normalize_bibtex()` in `doi2bib3/backend.py`.
 
@@ -117,12 +118,19 @@ Implementation:
 - sends `Accept: application/json` and the shared doi2bib3 `User-Agent`
 - implemented by `_openlibrary_book_info()`
 
-4. If Open Library fails or has no result, query Google Books:
+4. If Open Library fails or has no result, query these keyless catalogs in
+order, stopping after the first usable record:
+- Library of Congress SRU (MODS XML)
+- German National Library SRU (MARC21 XML)
+- Crossref works filtered by ISBN
+- Internet Archive advanced search
+
+5. If the keyless catalogs have no result, query Google Books:
 - `https://www.googleapis.com/books/v1/volumes?q=isbn:<isbn>`
 - sends `Accept: application/json` and the shared doi2bib3 `User-Agent`
 - implemented by `_google_books_volume_info()`
 
-5. Use the first returned book/volume with a title and construct `@book` BibTeX:
+6. Use the first returned book/volume with a title and construct `@book` BibTeX:
 - `title` plus `subtitle` when present
 - `author` joined with BibTeX `and`
 - `publisher`
@@ -132,7 +140,7 @@ Implementation:
 - implemented by `_bibtex_from_google_books_volume()` and
   `_bibtex_from_openlibrary_book()`
 
-6. Normalize and return the resulting `@book`.
+7. Normalize and return the resulting `@book`.
 - Implemented by `fetch_bibtex()` calling `normalize_bibtex()`.
 
 If both providers fail or return no matching volume, ISBN resolution raises

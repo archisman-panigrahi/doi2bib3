@@ -18,9 +18,10 @@
 from dataclasses import dataclass
 import json
 from typing import Optional
-import json
 import re
+import unicodedata
 from urllib.parse import quote, unquote, urlparse
+import xml.etree.ElementTree as ET
 
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase
@@ -705,13 +706,16 @@ def _clean_title(value: str) -> str:
 def _join_names(value) -> str:
     if isinstance(value, list):
         names = []
+        seen = set()
         for item in value:
             if isinstance(item, dict):
                 name = _clean_string(item.get("name"))
             else:
                 name = _clean_string(item)
-            if name:
+            key = unicodedata.normalize("NFC", name).casefold()
+            if name and key not in seen:
                 names.append(name)
+                seen.add(key)
         return " and ".join(names)
     return _clean_string(value)
 
@@ -809,6 +813,237 @@ def _bibtex_from_google_books_volume(isbn: str, volume_info: dict) -> str:
     )
 
 
+def _library_of_congress_book_info(isbn: str, timeout: int = 15) -> dict:
+    """Fetch book metadata from the Library of Congress SRU catalog."""
+    url = (
+        "http://lx2.loc.gov:210/LCDB?version=1.1&operation=searchRetrieve&"
+        f"query=bath.isbn%3D{isbn}&maximumRecords=1&recordSchema=mods"
+    )
+    try:
+        resp = requests.get(
+            url, headers={"Accept": "application/xml", "User-Agent": USER_AGENT},
+            timeout=timeout,
+        )
+    except Exception as exc:
+        raise DOIError(f"Library of Congress lookup failed for ISBN {isbn}: {exc}") from exc
+    if resp.status_code != 200:
+        raise DOIError(
+            f"Library of Congress lookup failed for ISBN {isbn}: HTTP {resp.status_code}"
+        )
+
+    try:
+        root = ET.fromstring(resp.content)
+    except ET.ParseError as exc:
+        raise DOIError(
+            f"Library of Congress lookup failed for ISBN {isbn}: invalid XML"
+        ) from exc
+
+    ns = {"mods": "http://www.loc.gov/mods/v3"}
+    record = root.find(".//mods:mods", ns)
+    if record is None:
+        raise DOIError(
+            f"Library of Congress lookup failed for ISBN {isbn}: no book metadata found"
+        )
+
+    title_info = record.find("mods:titleInfo", ns)
+    title_parts = []
+    subtitle = ""
+    if title_info is not None:
+        title_parts = [
+            _clean_string(node.text)
+            for node in title_info.findall("mods:nonSort", ns)
+            + title_info.findall("mods:title", ns)
+            if _clean_string(node.text)
+        ]
+        subtitle = _clean_string(title_info.findtext("mods:subTitle", default="", namespaces=ns))
+
+    authors = []
+    for name in record.findall("mods:name[@type='personal']", ns):
+        for part in name.findall("mods:namePart", ns):
+            if part.get("type") is None and _clean_string(part.text):
+                authors.append(_clean_string(part.text).rstrip(" ,"))
+                break
+
+    publisher = ""
+    year = ""
+    origin = record.find("mods:originInfo", ns)
+    if origin is not None:
+        publisher = _clean_string(
+            origin.findtext("mods:agent/mods:namePart", default="", namespaces=ns)
+        ).rstrip(" ,")
+        year = _clean_string(
+            origin.findtext("mods:dateIssued", default="", namespaces=ns)
+        )
+
+    lccn = record.find("mods:identifier[@type='lccn']", ns)
+    catalog_url = (
+        f"https://lccn.loc.gov/{quote(_clean_string(lccn.text))}"
+        if lccn is not None and _clean_string(lccn.text)
+        else ""
+    )
+    return {
+        "title": "".join(title_parts),
+        "subtitle": subtitle,
+        "authors": authors,
+        "publisher": publisher,
+        "year": year,
+        "url": catalog_url,
+    }
+
+
+def _marc_subfields(field: ET.Element, code: str) -> list[str]:
+    ns = {"marc": "http://www.loc.gov/MARC21/slim"}
+    return [
+        _clean_string(node.text)
+        for node in field.findall(f"marc:subfield[@code='{code}']", ns)
+        if _clean_string(node.text)
+    ]
+
+
+def _dnb_book_info(isbn: str, timeout: int = 15) -> dict:
+    """Fetch book metadata from the German National Library SRU catalog."""
+    url = (
+        "https://services.dnb.de/sru/dnb?version=1.1&operation=searchRetrieve&"
+        f"query=num%3D{isbn}&maximumRecords=1&recordSchema=MARC21-xml"
+    )
+    try:
+        resp = requests.get(
+            url, headers={"Accept": "application/xml", "User-Agent": USER_AGENT},
+            timeout=timeout,
+        )
+    except Exception as exc:
+        raise DOIError(f"DNB lookup failed for ISBN {isbn}: {exc}") from exc
+    if resp.status_code != 200:
+        raise DOIError(f"DNB lookup failed for ISBN {isbn}: HTTP {resp.status_code}")
+
+    try:
+        root = ET.fromstring(resp.content)
+    except ET.ParseError as exc:
+        raise DOIError(f"DNB lookup failed for ISBN {isbn}: invalid XML") from exc
+
+    ns = {"marc": "http://www.loc.gov/MARC21/slim"}
+    record = root.find(".//marc:record", ns)
+    if record is None:
+        raise DOIError(f"DNB lookup failed for ISBN {isbn}: no book metadata found")
+
+    title_field = record.find("marc:datafield[@tag='245']", ns)
+    title = subtitle = ""
+    if title_field is not None:
+        title = " ".join(_marc_subfields(title_field, "a")).rstrip(" /:;,")
+        subtitle = " ".join(_marc_subfields(title_field, "b")).rstrip(" /:;,")
+
+    authors = []
+    for tag in ("100", "700"):
+        for field in record.findall(f"marc:datafield[@tag='{tag}']", ns):
+            roles = [role.lower() for role in _marc_subfields(field, "4")]
+            if roles and "aut" not in roles:
+                continue
+            authors.extend(name.rstrip(" /:;,") for name in _marc_subfields(field, "a"))
+
+    publication = record.find("marc:datafield[@tag='264'][@ind2='1']", ns)
+    if publication is None:
+        publication = record.find("marc:datafield[@tag='260']", ns)
+    publisher = year = ""
+    if publication is not None:
+        publisher = " ".join(_marc_subfields(publication, "b")).rstrip(" /:;,")
+        year = " ".join(_marc_subfields(publication, "c"))
+
+    identifier = _clean_string(
+        record.findtext("marc:controlfield[@tag='001']", default="", namespaces=ns)
+    )
+    return {
+        "title": title,
+        "subtitle": subtitle,
+        "authors": authors,
+        "publisher": publisher,
+        "year": year,
+        "url": f"https://d-nb.info/{identifier}" if identifier else "",
+    }
+
+
+def _crossref_book_info(isbn: str, timeout: int = 15) -> dict:
+    """Fetch book metadata from Crossref when a deposited work lists the ISBN."""
+    url = f"https://api.crossref.org/works?filter=isbn%3A{isbn}&rows=1"
+    try:
+        resp = requests.get(
+            url, headers={"Accept": "application/json", "User-Agent": USER_AGENT},
+            timeout=timeout,
+        )
+    except Exception as exc:
+        raise DOIError(f"Crossref lookup failed for ISBN {isbn}: {exc}") from exc
+    if resp.status_code != 200:
+        raise DOIError(f"Crossref lookup failed for ISBN {isbn}: HTTP {resp.status_code}")
+    data = _json_response(resp)
+    items = data.get("message", {}).get("items", []) if isinstance(data, dict) else []
+    if not items:
+        raise DOIError(f"Crossref lookup failed for ISBN {isbn}: no book metadata found")
+    item = items[0]
+    titles = item.get("title") or []
+    subtitles = item.get("subtitle") or []
+    authors = [
+        " ".join(filter(None, (_clean_string(author.get("given")), _clean_string(author.get("family")))))
+        for author in item.get("author", [])
+        if isinstance(author, dict)
+    ]
+    date_parts = (item.get("published") or item.get("issued") or {}).get("date-parts", [])
+    year = str(date_parts[0][0]) if date_parts and date_parts[0] else ""
+    return {
+        "title": _clean_string(titles[0]) if titles else "",
+        "subtitle": _clean_string(subtitles[0]) if subtitles else "",
+        "authors": authors,
+        "publisher": _clean_string(item.get("publisher")),
+        "year": year,
+        "url": _clean_string(item.get("URL")),
+    }
+
+
+def _internet_archive_book_info(isbn: str, timeout: int = 15) -> dict:
+    """Fetch book metadata from Internet Archive's public search index."""
+    fields = "title,creator,publisher,date,identifier"
+    url = (
+        "https://archive.org/advancedsearch.php?"
+        f"q=isbn%3A{isbn}&fl%5B%5D={quote(fields)}&rows=1&output=json"
+    )
+    try:
+        resp = requests.get(
+            url, headers={"Accept": "application/json", "User-Agent": USER_AGENT},
+            timeout=timeout,
+        )
+    except Exception as exc:
+        raise DOIError(f"Internet Archive lookup failed for ISBN {isbn}: {exc}") from exc
+    if resp.status_code != 200:
+        raise DOIError(
+            f"Internet Archive lookup failed for ISBN {isbn}: HTTP {resp.status_code}"
+        )
+    data = _json_response(resp)
+    docs = data.get("response", {}).get("docs", []) if isinstance(data, dict) else []
+    if not docs:
+        raise DOIError(
+            f"Internet Archive lookup failed for ISBN {isbn}: no book metadata found"
+        )
+    book = docs[0]
+    identifier = _clean_string(book.get("identifier"))
+    return {
+        "title": _clean_string(book.get("title")),
+        "authors": book.get("creator") or [],
+        "publisher": _first_name(book.get("publisher")),
+        "year": _clean_string(book.get("date")),
+        "url": f"https://archive.org/details/{quote(identifier)}" if identifier else "",
+    }
+
+
+def _bibtex_from_book_info(isbn: str, book: dict) -> str:
+    return _book_bibtex(
+        isbn,
+        title=_clean_string(book.get("title")),
+        subtitle=_clean_string(book.get("subtitle")),
+        authors=_join_names(book.get("authors")),
+        publisher=_clean_string(book.get("publisher")),
+        year=_clean_string(book.get("year")),
+        url=_clean_string(book.get("url")),
+    )
+
+
 def _openlibrary_book_info(isbn: str, timeout: int = 15) -> dict:
     """Fetch the Open Library book result for an ISBN."""
     url = (
@@ -846,6 +1081,7 @@ def _bibtex_from_openlibrary_book(isbn: str, book: dict) -> str:
     return _book_bibtex(
         isbn,
         title=_clean_string(book.get("title")),
+        subtitle=_clean_string(book.get("subtitle")),
         authors=_join_names(book.get("authors")),
         publisher=_first_name(book.get("publishers")),
         year=_clean_string(book.get("publish_date")),
@@ -861,6 +1097,20 @@ def _fetch_bibtex_for_isbn(isbn: str, timeout: int = 15) -> str:
         return _bibtex_from_openlibrary_book(isbn, book)
     except DOIError as exc:
         errors.append(str(exc))
+
+    providers = (
+        ("Library of Congress", _library_of_congress_book_info),
+        ("DNB", _dnb_book_info),
+        ("Crossref", _crossref_book_info),
+        ("Internet Archive", _internet_archive_book_info),
+    )
+    for _name, provider in providers:
+        try:
+            book = provider(isbn, timeout=timeout)
+            if _clean_string(book.get("title")):
+                return _bibtex_from_book_info(isbn, book)
+        except DOIError as exc:
+            errors.append(str(exc))
 
     try:
         volume_info = _google_books_volume_info(isbn, timeout=timeout)

@@ -42,7 +42,10 @@ flowchart TD
     A[identifier] --> AA{Valid ISBN-10/13?}
     AA -->|Yes| AB[Open Library book query]
     AB --> AE{Found?}
-    AE -->|No| AF[Google Books volume query]
+    AE -->|No| AG[LOC, DNB, Crossref, Internet Archive]
+    AG --> AH{Found?}
+    AH -->|No| AF[Google Books volume query]
+    AH -->|Yes| AC
     AE -->|Yes| AC[Construct @book]
     AF --> AC
     AC --> ZB[Raw BibTeX for normalization]
@@ -93,7 +96,10 @@ flowchart TD
     C -->|No| D[Continue non-ISBN resolver]
     C -->|Yes| E[GET Open Library api/books]
     E --> F{Book with title?}
-    F -->|No| O[GET Google Books volumes?q=isbn:<isbn>]
+    F -->|No| K[Query LOC, DNB, Crossref, then Internet Archive]
+    K --> L{Book with title?}
+    L -->|No| O[GET Google Books volumes?q=isbn:<isbn>]
+    L -->|Yes| H
     O --> P{Volume with title?}
     P -->|No| G[Raise DOIError]
     F -->|Yes| H[Build @book fields]
@@ -157,6 +163,7 @@ flowchart TD
 - DSpace metadata and Handle resolution: `doi2bib3/backend.py` -> `_dspace_item_api_url()`, `_resolve_dspace_api_url()`, `_fetch_dspace_metadata()`
 - DSpace thesis/DOI selection: `doi2bib3/backend.py` -> `_dspace_thesis_bibtex()`, `_dspace_item_doi()`
 - ISBN parse/query: `doi2bib3/backend.py` -> `_parse_isbn_string()`, `_fetch_bibtex_for_isbn()`
+- ISBN catalog adapters: `doi2bib3/backend.py` -> `_openlibrary_book_info()`, `_library_of_congress_book_info()`, `_dnb_book_info()`, `_crossref_book_info()`, `_internet_archive_book_info()`, `_google_books_volume_info()`
 - Resolve identifier: `doi2bib3/backend.py` -> `_resolve_identifier()`, `_resolve_identifier_to_doi()`
 - arXiv parse/query: `doi2bib3/backend.py` -> `_parse_arxiv_id_string()`, `_parse_arxiv_id_from_doi_string()`, `_fetch_arxiv_metadata()`, `_resolve_arxiv_identifier()`
 - Crossref search: `doi2bib3/backend.py` -> `_search_doi_via_crossref()`
