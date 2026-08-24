@@ -33,6 +33,43 @@ def test_normalize_bibtex_handles_unbraced_month_macro():
     assert "journal = {Phys. Rev. B}" in out
 
 
+@pytest.mark.parametrize(
+    ("full_name", "abbreviation"),
+    [
+        ("Journal of Robustness Reports", "J. Robust. Rep."),
+        ("Journal of Social and Behavior Change", "J. Soc. Behav. Change"),
+        ("Migration Politics", "Mig. Pol."),
+        ("SciPost Astronomy", "SciPost Astro."),
+        ("SciPost Astronomy Codebases", "SciPost Astro. Codebases"),
+        ("SciPost Astronomy Core", "SciPost Astro. Core"),
+        ("SciPost Chemistry", "SciPost Chem."),
+        ("SciPost Chemistry Codebases", "SciPost Chem. Codebases"),
+        ("SciPost Chemistry Core", "SciPost Chem. Core"),
+        ("SciPost Commemorations", "SciPost Commem."),
+        ("SciPost Physics", "SciPost Phys."),
+        ("SciPost Physics Codebases", "SciPost Phys. Codebases"),
+        ("SciPost Physics Community Reports", "SciPost Phys. Comm. Rep."),
+        ("SciPost Physics Core", "SciPost Phys. Core"),
+        ("SciPost Physics Lecture Notes", "SciPost Phys. Lect. Notes"),
+        ("SciPost Physics Proceedings", "SciPost Phys. Proc."),
+        ("SciPost Physics Reviews", "SciPost Phys. Rev."),
+        ("SciPost Selections", "SciPost Sel."),
+    ],
+)
+def test_normalize_bibtex_abbreviates_scipost_journals(full_name, abbreviation):
+    raw = f"""@article{{Example_2026,
+ title={{An example article}},
+ author={{Doe, Jane}},
+ journal={{{full_name}}},
+ year={{2026}}
+}}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert f"journal = {{{abbreviation}}}" in out
+
+
 def test_normalize_bibtex_encodes_real_accented_article_metadata():
     raw = """@article{Florencio_2015,
  title={Enmeshed bodies, impossible touch: The object-oriented world of Pina Bausch's Café Müller},

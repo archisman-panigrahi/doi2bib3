@@ -176,6 +176,7 @@ def _load_journal_replacements():
         "APS_replacement.json",
         "Nature_replacement.json",
         "IOP_replacement.json",
+        "SciPost_replacement.json",
     ]:
         file_path = os.path.join(current_dir, json_file)
         try:

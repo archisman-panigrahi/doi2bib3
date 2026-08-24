@@ -468,15 +468,19 @@ publisher-specific:
   - `APS_replacement.json`
   - `Nature_replacement.json`
   - `IOP_replacement.json`
+  - `SciPost_replacement.json`
 - Mapping load: `_load_journal_replacements()` at import time
 - Abbreviation lookup: `abbreviate_journal_name()`
 - HTML entities are decoded and raw `&` is escaped as `\&`.
 - Applied inside `normalize_bibtex()`
+- SciPost titles without registered publications use abbreviations inferred from
+  SciPost's existing short-title pattern; these mappings can be updated when the
+  publisher registers official metadata.
 
 Publisher-specific note:
 - ScienceDirect/Elsevier handling is part of identifier resolution, before raw
   BibTeX fetch, because ScienceDirect URLs often expose a PII instead of a DOI.
-- Crossref article-number enrichment and APS/Nature/IOP journal abbreviations are part of
+- Crossref article-number enrichment and APS/Nature/IOP/SciPost journal abbreviations are part of
   BibTeX normalization, after raw BibTeX has already been fetched.
 
 9. Month cleanup:
