@@ -438,6 +438,10 @@ characters in titles. The title cleanup passes are generic and not
 publisher-specific:
 
 - `<i>...</i>` spans become `\textit{...}`.
+- `<sub>...</sub>` and `<sup>...</sup>` spans become
+  `\textsubscript{...}` and `\textsuperscript{...}`.
+- Chemical formulas split by HTML subscripts are reassembled before conversion,
+  so provider whitespace does not separate adjacent element symbols.
 - `+-` and `±` become `\pm` inside existing math and `$\pm$` outside math.
 - Inline math spans are separated from adjacent text, for example
   `in${...}$` -> `in ${...}$` and `${s}_{\pm}$Pairing` ->

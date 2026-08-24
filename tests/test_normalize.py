@@ -346,6 +346,58 @@ determinations of O stars},
     assert "</i>" not in out
 
 
+def test_normalize_bibtex_converts_science_html_subscript_to_latex():
+    raw = r"""@article{Hanaguri_2009,
+ title={Coherence Factors in a High- \textit{T} <sub>c</sub> Cuprate Probed by Quasi-Particle Scattering Off Vortices},
+ author={Hanaguri, T.},
+ journal={Science},
+ year={2009},
+ url={https://doi.org/10.1126/science.1166138}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"\textit{T}\textsubscript{c} {Cuprate}" in out
+    assert "<sub" not in out.lower()
+    assert "</sub>" not in out.lower()
+
+
+def test_normalize_bibtex_converts_science_formula_subscripts_to_latex():
+    raw = """@article{Hoffman_2002,
+ title={Imaging Quasiparticle Interference in Bi <sub>2</sub> Sr <sub>2</sub> CaCu <sub>2</sub> O <sub>8+δ</sub>},
+ author={Hoffman, J. E.},
+ journal={Science},
+ year={2002},
+ url={https://doi.org/10.1126/science.1072640}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert (
+        r"$\mathrm{Bi}_{2}\mathrm{Sr}_{2}\mathrm{Ca}\mathrm{Cu}_{2}"
+        r"\mathrm{O}_{8+\delta}$" in out
+    )
+    assert "<sub" not in out.lower()
+    assert "</sub>" not in out.lower()
+
+
+def test_normalize_bibtex_converts_html_superscript_to_latex():
+    raw = """@article{Example_2026,
+ title={A value in cm <sup>2</sup>},
+ author={Example, A.},
+ journal={Example Journal},
+ year={2026}
+}
+"""
+
+    out = normalize_bibtex(raw)
+
+    assert r"cm\textsuperscript{2}" in out
+    assert "<sup" not in out.lower()
+
+
 def test_normalize_bibtex_fills_missing_thesis_school_from_publisher():
     raw = """@phdthesis{https://doi.org/10.13016/hepj-rmsu,
  doi = {10.13016/HEPJ-RMSU},

@@ -105,7 +105,7 @@ flowchart TD
     J --> K
     K --> L[Title NFC normalization]
     L --> M[Convert inline MathML to LaTeX math]
-    M --> N[Convert HTML italics to LaTeX textit]
+    M --> N[Convert HTML italics and scripts to LaTeX]
     N --> O[Insert dollar math and normalize plus/minus]
     O --> P[Convert plain chemical formulas to LaTeX math]
     P --> Q[Space inline math and escape title specials]

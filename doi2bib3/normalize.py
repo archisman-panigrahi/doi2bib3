@@ -248,6 +248,49 @@ def html_italics_to_latex(value: str) -> str:
     )
 
 
+def html_scripts_to_latex(value: str) -> str:
+    if not re.search(r"<(?:sub|sup)\b", value, flags=re.IGNORECASE):
+        return value
+
+    element_group = rf"(?:{ELEMENT})+"
+    numeric_subscript = (
+        r"(?i:<sub\b[^>]*>)\s*\d+(?:\.\d+)?(?:[+\-−][δδε])?\s*"
+        r"(?i:</sub>)"
+    )
+    html_formula = re.compile(
+        rf"(?<![A-Za-z\\])(?P<formula>{element_group}\s*{numeric_subscript}"
+        rf"(?:\s*{element_group}(?:\s*{numeric_subscript})?)+)(?![a-z])"
+    )
+
+    def _flatten_formula(match: re.Match) -> str:
+        formula = re.sub(
+            r"</?sub\b[^>]*>", "", match.group("formula"), flags=re.IGNORECASE
+        )
+        return re.sub(r"\s+", "", formula)
+
+    value = html_formula.sub(_flatten_formula, value)
+
+    def _replace_script(match: re.Match) -> str:
+        command = (
+            "textsubscript"
+            if match.group("tag").lower() == "sub"
+            else "textsuperscript"
+        )
+        content = "".join(
+            rf"\ensuremath{{{GREEK_LATEX[char]}}}" if char in GREEK_LATEX else char
+            for char in match.group("content").strip()
+        )
+        return f"\\{command}{{{content}}}"
+
+    return re.sub(
+        r"[ \t\r\n\f\v]*<(?P<tag>sub|sup)\b[^>]*>"
+        r"(?P<content>.*?)</(?P=tag)>",
+        _replace_script,
+        value,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 def normalize_title_whitespace(title: str) -> str:
     if not re.search(r"[ \t\r\n\f\v]{2,}|[\t\r\n\f\v]", title):
         return title.strip()
@@ -601,6 +644,7 @@ def normalize_bibtex(
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
             entry["title"] = mathml_to_latex(entry["title"])
             entry["title"] = html_italics_to_latex(entry["title"])
+            entry["title"] = html_scripts_to_latex(entry["title"])
             entry["title"] = display_math_to_inline(entry["title"])
             entry["title"] = insert_dollars(entry["title"])
             entry["title"] = plus_minus_to_latex(entry["title"])
