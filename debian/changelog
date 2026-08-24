@@ -1,3 +1,9 @@
+python-doi2bib3 (1.6.1-1) unstable; urgency=medium
+
+  * abbreviate scipost journal names
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Mon, 24 Aug 2026 09:37:51 -0400
+
 python-doi2bib3 (1.6.0-1) unstable; urgency=medium
 
   * support for dspace links
