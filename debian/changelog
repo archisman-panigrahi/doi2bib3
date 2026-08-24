@@ -1,3 +1,9 @@
+python-doi2bib3 (1.6.2-1) unstable; urgency=medium
+
+  * Fixed subscripts in science and also First names with non-Latin letter commands
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Mon, 24 Aug 2026 17:25:28 -0400
+
 python-doi2bib3 (1.6.1-1) unstable; urgency=medium
 
   * abbreviate scipost journal names
