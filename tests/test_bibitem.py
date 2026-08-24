@@ -30,6 +30,28 @@ def test_format_bibtex_to_aps_bibitem_uses_normalized_fields():
     )
 
 
+def test_format_bibtex_to_aps_bibitem_preserves_latex_first_initial():
+    bib = r"""@article{Fischer_scanning_2007,
+ author = {Fischer, {\O}ystein and Kugler, Martin and Maggio-Aprile, Ivan and Berthod, Christophe and Renner, Christoph},
+ journal = {Rev. Mod. Phys.},
+ pages = {353--419},
+ publisher = {American Physical Society (APS)},
+ title = {{Scanning} tunneling spectroscopy of high-temperature superconductors},
+ url = {http://dx.doi.org/10.1103/RevModPhys.79.353},
+ volume = {79},
+ year = {2007}
+}
+"""
+
+    assert format_bibtex_to_aps_bibitem(bib) == (
+        "\\bibitem{Fischer_scanning_2007}\n"
+        "{\\O}. Fischer, M. Kugler, I. Maggio-Aprile, C. Berthod, and C. Renner, "
+        "Scanning tunneling spectroscopy of high-temperature superconductors, "
+        "\\href{https://doi.org/10.1103/RevModPhys.79.353}"
+        "{Rev. Mod. Phys. \\textbf{79}, 353 (2007)}.\n"
+    )
+
+
 def test_format_bibtex_to_aps_bibitem_allows_custom_key():
     bib = r"""@article{original_key,
  author = {Aspelmeyer, Markus},

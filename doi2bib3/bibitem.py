@@ -18,9 +18,30 @@ from .backend import fetch_bibtex, DOIError
 _APS_PAGE_RANGE_RE = re.compile(r"\s*(\d+)\s*--\s*\d+\s*")
 
 
+def _latex_initial(token: str) -> str:
+    if token.startswith("{\\"):
+        depth = 0
+        for index, char in enumerate(token):
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return f"{token[:index + 1]}."
+
+    command = re.match(r"^(\\(?:[A-Za-z]+|.)\{[^{}]*\})", token)
+    return f"{command.group(1)}." if command else ""
+
+
 def _initials(tokens: list[str]) -> str:
     parts = re.split(r"[\s-]+", " ".join(tokens))
-    return " ".join(f"{part[0].upper()}." for part in parts if part[:1].isalpha())
+    initials = []
+    for part in parts:
+        if part[:1].isalpha():
+            initials.append(f"{part[0].upper()}.")
+        elif initial := _latex_initial(part):
+            initials.append(initial)
+    return " ".join(initials)
 
 
 def _format_author(author: str) -> str:
