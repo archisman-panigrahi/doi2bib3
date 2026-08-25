@@ -18,7 +18,7 @@ This tool combines the features of [doi2bib](https://github.com/bibcure/doi2bib/
 - Full pipeline documentation (input -> output): [`docs/ALGORITHM.md`](docs/ALGORITHM.md)
 - Diagram version of the pipeline: [`docs/ALGORITHM_VISUALS.md`](docs/ALGORITHM_VISUALS.md)
 
-A cross-platform **GUI frontend** is available: Check out [QuickBib](https://archisman-panigrahi.github.io/QuickBib) and its [webapp](https://quickbib.streamlit.app/).
+A cross-platform **GUI frontend** is available: Check out [QuickBib](https://archisman-panigrahi.github.io/QuickBib) and its [webapp](https://quickbib.streamlit.app/). An [Omarchy plugin](https://omarchyplugins.com/plugin.html?id=archisman-panigrahi.quickbib) is also available.
 
 ## Installation
 
