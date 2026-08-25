@@ -110,10 +110,11 @@ Name of the paper (includes fuzzy search):
 doi2bib3 "Projected Topological Branes"
 ```
 
-Publisher/article pages (Supports APS, AMS, ACS, Science, IOP Science, Nature, PNAS, SciPost, and ScienceDirect journals):
+Publisher/article pages (Supports APS, AIP, AMS, ACS, Science, IOP Science, Nature, PNAS, SciPost, and ScienceDirect journals):
 
 ```bash
 doi2bib3 https://www.pnas.org/doi/10.1073/pnas.2305943120
+doi2bib3 https://pubs.aip.org/aip/rsi/article/89/10/101101/364406/Invited-Review-Article-Multi-tip-scanning
 doi2bib3 https://iopscience.iop.org/article/10.1088/1402-4896/ad995f/pdf
 doi2bib3 https://www.scipost.org/SciPostPhys.20.3.082/
 doi2bib3 https://www.scipost.org/SciPostPhys.20.3.082/pdf

@@ -174,6 +174,7 @@ def _load_journal_replacements():
 
     for json_file in [
         "APS_replacement.json",
+        "AIP_replacement.json",
         "Nature_replacement.json",
         "IOP_replacement.json",
         "SciPost_replacement.json",

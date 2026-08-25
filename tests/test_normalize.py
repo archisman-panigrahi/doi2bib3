@@ -70,6 +70,33 @@ def test_normalize_bibtex_abbreviates_scipost_journals(full_name, abbreviation):
     assert f"journal = {{{abbreviation}}}" in out
 
 
+@pytest.mark.parametrize(
+    ("full_name", "abbreviation"),
+    [
+        ("AIP Advances", "AIP Adv."),
+        ("APL Bioengineering", "APL Bioeng."),
+        ("Applied Physics Letters", "Appl. Phys. Lett."),
+        ("The Journal of Chemical Physics", "J. Chem. Phys."),
+        ("Review of Scientific Instruments", "Rev. Sci. Instrum."),
+        ("Journal of Vacuum Science & Technology A", "J. Vac. Sci. Technol. A"),
+        ("Matter and Radiation at Extremes", "Matter Radiat. Extremes"),
+    ],
+)
+def test_normalize_bibtex_abbreviates_aip_journals(full_name, abbreviation):
+    raw = f"""@article{{Example_2026,
+ title={{An example article}},
+ author={{Doe, Jane}},
+ journal={{{full_name}}},
+ year={{2026}}
+}}
+"""
+
+    out = normalize_bibtex(raw)
+
+    expected = abbreviation.replace("&", r"\&")
+    assert f"journal = {{{expected}}}" in out
+
+
 def test_normalize_bibtex_encodes_real_accented_article_metadata():
     raw = """@article{Florencio_2015,
  title={Enmeshed bodies, impossible touch: The object-oriented world of Pina Bausch's Café Müller},

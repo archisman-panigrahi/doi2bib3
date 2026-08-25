@@ -470,6 +470,7 @@ publisher-specific:
 8. Journal formatting:
 - apply abbreviation mapping from bundled JSON dictionaries:
   - `APS_replacement.json`
+  - `AIP_replacement.json`
   - `Nature_replacement.json`
   - `IOP_replacement.json`
   - `SciPost_replacement.json`
@@ -484,7 +485,7 @@ publisher-specific:
 Publisher-specific note:
 - ScienceDirect/Elsevier handling is part of identifier resolution, before raw
   BibTeX fetch, because ScienceDirect URLs often expose a PII instead of a DOI.
-- Crossref article-number enrichment and APS/Nature/IOP/SciPost journal abbreviations are part of
+- Crossref article-number enrichment and APS/AIP/Nature/IOP/SciPost journal abbreviations are part of
   BibTeX normalization, after raw BibTeX has already been fetched.
 
 9. Month cleanup:

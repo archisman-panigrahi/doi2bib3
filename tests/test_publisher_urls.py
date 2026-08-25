@@ -98,6 +98,42 @@ def test_aip_url_resolves_doi_from_minimal_article(monkeypatch, with_slug):
 
 
 @pytest.mark.imported
+def test_aip_review_example_fetches_abbreviated_journal(monkeypatch):
+    called_urls = []
+    article_url = (
+        "https://pubs.aip.org/aip/rsi/article/89/10/101101/364406/"
+        "Invited-Review-Article-Multi-tip-scanning"
+    )
+    doi = "10.1063/1.5042346"
+    minimal_url = "https://aipp.silverchair-cdn.com/article-minimal/364406"
+    responses = {
+        minimal_url: FakeResponse(
+            text=f'<meta name="citation_doi" content="{doi}">'
+        ),
+        f"https://doi.org/{doi}": FakeResponse(
+            text=f"""
+            @article{{Voigtlander_invited_2018,
+             author = {{Voigtlander, Bert}},
+             title = {{Invited Review Article: Multi-tip scanning tunneling microscopy}},
+             journal = {{Review of Scientific Instruments}},
+             volume = {{89}},
+             number = {{10}},
+             pages = {{101101}},
+             year = {{2018}},
+             url = {{https://doi.org/{doi}}}
+            }}
+            """
+        ),
+    }
+    _install_fake_get(monkeypatch, responses, called_urls)
+
+    bibtex = backend.fetch_bibtex(article_url)
+
+    assert "journal = {Rev. Sci. Instrum.}" in bibtex
+    assert called_urls == [minimal_url, f"https://doi.org/{doi}"]
+
+
+@pytest.mark.imported
 def test_aip_url_does_not_fall_back_to_blind_crossref_search(monkeypatch):
     called_urls = []
     article_url = "https://pubs.aip.org/aip/rsi/article/85/4/043706/357699"
