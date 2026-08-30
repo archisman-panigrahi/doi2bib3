@@ -2,5 +2,6 @@
 
 from .backend import fetch_bibtex
 from .bibitem import fetch_bibitem_aps, format_bibtex_to_aps_bibitem
+from ._version import __version__
 
-__all__ = ["fetch_bibtex", "fetch_bibitem_aps", "format_bibtex_to_aps_bibitem"]
+__all__ = ["__version__", "fetch_bibtex", "fetch_bibitem_aps", "format_bibtex_to_aps_bibitem"]

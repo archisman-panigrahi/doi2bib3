@@ -20,6 +20,9 @@ REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 # pyproject.toml
 sed -i "s/^version = \".*\"/version = \"$VERSION\"/" "$REPO_ROOT/pyproject.toml"
 
+# Python package (used when distribution metadata is not installed, as in the PPA)
+sed -i "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" "$REPO_ROOT/doi2bib3/_version.py"
+
 # AUR/PKGBUILD
 sed -i "s/^pkgver=.*/pkgver=$VERSION/" "$REPO_ROOT/AUR/PKGBUILD"
 
@@ -37,5 +40,6 @@ mv "$CHANGELOG.tmp" "$CHANGELOG"
 
 echo "Bumped to $VERSION:"
 echo "  pyproject.toml"
+echo "  doi2bib3/_version.py"
 echo "  AUR/PKGBUILD"
 echo "  debian/changelog"
