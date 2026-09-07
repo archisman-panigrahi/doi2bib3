@@ -50,6 +50,10 @@ sudo apt install python3-doi2bib3
 
 You can grab the prebuild .deb package from [GitHub releases](https://github.com/archisman-panigrahi/doi2bib3/releases/latest).
 
+### Termux
+
+First install python with `pkg install python` and then [install from pip](https://github.com/archisman-panigrahi/doi2bib3#install-from-pypi).
+
 ### Installing from source
 
 Create a virtual environment and install runtime dependencies:
