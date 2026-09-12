@@ -1,2 +1,3 @@
 requests
 bibtexparser
+pylatexenc>=2.10

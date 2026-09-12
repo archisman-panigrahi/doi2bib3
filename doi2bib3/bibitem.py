@@ -9,10 +9,8 @@ Provides two public functions:
 import re
 from typing import Optional
 
-import bibtexparser
-from bibtexparser.customization import splitname
-
 from .backend import fetch_bibtex, DOIError
+from ._bibtex import parse_entries, split_name
 
 
 _APS_PAGE_RANGE_RE = re.compile(r"\s*(\d+)\s*--\s*\d+\s*")
@@ -45,7 +43,7 @@ def _initials(tokens: list[str]) -> str:
 
 
 def _format_author(author: str) -> str:
-    name = splitname(author, strict_mode=False)
+    name = split_name(author)
     surname = " ".join(name["von"] + name["last"])
     if name["jr"]:
         surname = f"{surname}, {' '.join(name['jr'])}"
@@ -117,12 +115,11 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     \bibitem{Key}
     F. M. Lastname, S. T. Other, Journal volume, pages (year)
     """
-    parser = bibtexparser.bparser.BibTexParser(common_strings=False)
-    db = bibtexparser.loads(bibtex_str, parser=parser)
-    if not db.entries:
+    entries = parse_entries(bibtex_str)
+    if not entries:
         raise DOIError("No BibTeX entries found to format as bibitem")
 
-    entry = db.entries[0]
+    entry = entries[0]
     bibkey = key or entry.get("ID") or entry.get("id") or "entry"
 
     authors = _format_authors_initials(entry.get("author", ""))

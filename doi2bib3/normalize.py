@@ -24,10 +24,9 @@ import re
 import urllib.parse
 import xml.etree.ElementTree as ET
 
-import bibtexparser
-from bibtexparser.bparser import BibTexParser
 import requests
 
+from ._bibtex import dump_entries, parse_entries
 from .constants import USER_AGENT
 
 LATEX_DIACRITIC_COMMANDS = {
@@ -563,14 +562,8 @@ def normalize_bibtex(
 ) -> str:
     # Some providers return month macros like month=july without defining
     # them, which makes bibtexparser raise UndefinedString.
-    parser = BibTexParser(common_strings=False)
-    bib_db = bibtexparser.loads(
-        _MONTH_STRING_DEFINITIONS + "\n" + bib_str,
-        parser=parser,
-    )
-    # Keep resolved values in entries while omitting helper @string blocks.
-    bib_db.strings = {}
-    for entry in bib_db.entries:
+    entries = parse_entries(_MONTH_STRING_DEFINITIONS + "\n" + bib_str)
+    for entry in entries:
         if "ID" in entry:
             entry["ID"] = entry["ID"].replace("_", "")
 
@@ -615,7 +608,7 @@ def normalize_bibtex(
 
         return base
 
-    for entry in bib_db.entries:
+    for entry in entries:
         new_id = _make_bibtex_key(entry)
         entry["ID"] = new_id
         pages = entry.get("pages")
@@ -682,4 +675,4 @@ def normalize_bibtex(
             if key in entry:
                 entry[key] = encode_special_chars(entry[key])
 
-    return bibtexparser.dumps(bib_db)
+    return dump_entries(entries)

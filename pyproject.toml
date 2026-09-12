@@ -36,6 +36,9 @@ classifiers = [
 dependencies = [
   "requests",
   "bibtexparser",
+  # bibtexparser 2 imports this at package initialization.  Keep it explicit
+  # because some distribution packages do not pull in the transitive dependency.
+  "pylatexenc>=2.10",
 ]
 
 [project.optional-dependencies]

@@ -21,10 +21,9 @@ import json
 import re
 from urllib.parse import quote, unquote, urlparse
 
-import bibtexparser
-from bibtexparser.bibdatabase import BibDatabase
 import requests
 
+from ._bibtex import dump_entries
 from .constants import USER_AGENT
 from .normalize import normalize_bibtex
 
@@ -170,9 +169,7 @@ def _dspace_thesis_bibtex(metadata: dict, url: str) -> Optional[str]:
     if not all(entry[field] for field in ("author", "title", "school", "year")):
         raise DOIError(f"Incomplete DSpace thesis metadata: {url}")
 
-    database = BibDatabase()
-    database.entries = [entry]
-    return bibtexparser.dumps(database)
+    return dump_entries([entry])
 
 
 def _dspace_item_doi(metadata: dict) -> Optional[str]:

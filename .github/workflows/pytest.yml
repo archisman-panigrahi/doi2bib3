@@ -20,6 +20,9 @@ jobs:
         # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.13"]
+        bibtexparser:
+          - "bibtexparser==1.4.4"
+          - "bibtexparser>=2,<3"
     runs-on: ${{ matrix.os }}
 
     timeout-minutes: 3  # Timeout for each job individually
@@ -32,8 +35,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies with PyPI
-        run: pip install ".[dev]"
+        run: pip install ".[dev]" "${{ matrix.bibtexparser }}"
 
       - name: Run the check with pytest
         run: python -m pytest
-
