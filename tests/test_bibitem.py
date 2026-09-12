@@ -141,7 +141,7 @@ def test_format_bibtex_to_aps_bibitem_shows_first_page_for_aps_page_ranges():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Englert_2014}\n"
-        "B. G. Englert, An APS paper with a page range, "
+        "B.-G. Englert, An APS paper with a page range, "
         "Phys. Rev. A \\textbf{89}, 843 (2014).\n"
     )
 
@@ -177,7 +177,7 @@ def test_format_bibtex_to_aps_bibitem_uses_thesis_school():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Liao_investigation_2019}\n"
-        "W. T. Liao, Investigation of tunneling in superconductors, "
+        "W.-T. Liao, Investigation of tunneling in superconductors, "
         "University of Maryland, "
         "http://drum.lib.umd.edu/handle/1903/22117 (2019).\n"
     )

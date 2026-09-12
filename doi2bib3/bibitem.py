@@ -32,13 +32,16 @@ def _latex_initial(token: str) -> str:
 
 
 def _initials(tokens: list[str]) -> str:
-    parts = re.split(r"[\s-]+", " ".join(tokens))
     initials = []
-    for part in parts:
-        if part[:1].isalpha():
-            initials.append(f"{part[0].upper()}.")
-        elif initial := _latex_initial(part):
-            initials.append(initial)
+    for token in tokens:
+        token_initials = []
+        for part in token.split("-"):
+            if part[:1].isalpha():
+                token_initials.append(f"{part[0].upper()}.")
+            elif initial := _latex_initial(part):
+                token_initials.append(initial)
+        if token_initials:
+            initials.append("-".join(token_initials))
     return " ".join(initials)
 
 
