@@ -1,3 +1,9 @@
+python-doi2bib3 (1.7.0-1) unstable; urgency=medium
+
+  * Compatibility with bibtexparser v2 and also preserve hyphenated author names
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Sat, 12 Sep 2026 10:24:19 -0400
+
 python-doi2bib3 (1.6.3-1) unstable; urgency=medium
 
   * Abbreviations for AIP journals
