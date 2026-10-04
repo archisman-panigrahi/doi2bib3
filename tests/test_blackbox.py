@@ -34,7 +34,7 @@ import pytest
         (
             "10.1038/nphys1170",
             r"""@article{Aspelmeyer_measured_2009,
- author = {Aspelmeyer, Markus},
+ author = {\mbox{Aspelmeyer}, Markus},
  issn = {1745-2481},
  journal = {Nat. Phys.},
  month = {January},
@@ -52,7 +52,7 @@ import pytest
         (
             "https://doi.org/10.1038/nphys1170",
             r"""@article{Aspelmeyer_measured_2009,
- author = {Aspelmeyer, Markus},
+ author = {\mbox{Aspelmeyer}, Markus},
  issn = {1745-2481},
  journal = {Nat. Phys.},
  month = {January},
@@ -70,7 +70,7 @@ import pytest
     (
         "http://dx.doi.org/10.1103/physrevb.110.045147",
         r"""@article{Nazaryan_nonlocal_2024,
- author = {Nazaryan, Khachatur G. and Levitov, Leonid},
+ author = {\mbox{Nazaryan}, Khachatur G. and \mbox{Levitov}, Leonid},
  issn = {2469-9969},
  journal = {Phys. Rev. B},
  month = {July},
@@ -88,7 +88,7 @@ import pytest
         (
             "arXiv:2411.08091",
             r"""@article{Panigrahi_non-fermi_2025,
- author = {Panigrahi, Archisman and Kumar, Ajesh},
+ author = {\mbox{Panigrahi}, Archisman and \mbox{Kumar}, Ajesh},
  issn = {1079-7114},
  journal = {Phys. Rev. Lett.},
  month = {June},
@@ -119,7 +119,7 @@ def test_article_output(capfd, input_value, expected_output) -> None:
         (
             '"Projected Topological Branes"',
             r"""@article{Panigrahi_projected_2022,
- author = {Panigrahi, Archisman and Juri\v{c}i\'{c}, Vladimir and Roy, Bitan},
+ author = {\mbox{Panigrahi}, Archisman and \mbox{Juri\v{c}i\'{c}}, Vladimir and \mbox{Roy}, Bitan},
  issn = {2399-3650},
  journal = {Commun. Phys.},
  month = {September},
