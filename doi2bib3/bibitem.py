@@ -46,12 +46,43 @@ def _initials(tokens: list[str]) -> str:
 
 
 def _format_author(author: str) -> str:
+    """Format an author and prevent LaTeX from breaking the surname."""
     name = split_name(author)
     surname = " ".join(name["von"] + name["last"])
+    surname = f"\\mbox{{{surname}}}" if surname else ""
     if name["jr"]:
         surname = f"{surname}, {' '.join(name['jr'])}"
     initials = _initials(name["first"])
     return " ".join(part for part in (initials, surname) if part)
+
+
+def _remove_author_mboxes(author_field: str) -> str:
+    """Remove the outer word-protection commands before parsing BibTeX names."""
+    result = []
+    index = 0
+    marker = "\\mbox{"
+    while index < len(author_field):
+        if not author_field.startswith(marker, index):
+            result.append(author_field[index])
+            index += 1
+            continue
+
+        content_start = index + len(marker)
+        depth = 1
+        end = content_start
+        while end < len(author_field) and depth:
+            if author_field[end] == "{":
+                depth += 1
+            elif author_field[end] == "}":
+                depth -= 1
+            end += 1
+        if depth:
+            result.append(author_field[index])
+            index += 1
+            continue
+        result.append(author_field[content_start:end - 1])
+        index = end
+    return "".join(result)
 
 
 def _format_authors_initials(author_field: str) -> str:
@@ -61,6 +92,7 @@ def _format_authors_initials(author_field: str) -> str:
     """
     if not author_field:
         return ""
+    author_field = _remove_author_mboxes(author_field)
     out = [_format_author(author) for author in author_field.split(" and ")]
     out = [author for author in out if author]
 

@@ -480,6 +480,8 @@ publisher-specific:
 - Abbreviation lookup: `abbreviate_journal_name()`
 - HTML entities are decoded and raw `&` is escaped as `\&`.
 - Applied inside `normalize_bibtex()`
+- Each surname in the `author` field is wrapped in `\mbox{}` to prevent it from
+  breaking across lines in compiled output; given names and initials are unchanged.
 - SciPost titles without registered publications use abbreviations inferred from
   SciPost's existing short-title pattern; these mappings can be updated when the
   publisher registers official metadata.

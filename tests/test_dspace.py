@@ -51,7 +51,7 @@ def test_dspace_phd_thesis_url_uses_item_metadata(monkeypatch):
     bibtex = backend.fetch_bibtex(url)
 
     assert bibtex.startswith("@phdthesis{Dong_stoner_2023,")
-    assert "author = {Dong, Zhiyu}" in bibtex
+    assert "author = {\\mbox{Dong}, Zhiyu}" in bibtex
     assert "school = {Massachusetts Institute of Technology}" in bibtex
     assert "url = {https://hdl.handle.net/1721.1/152555}" in bibtex
     assert called_urls == [api_url]

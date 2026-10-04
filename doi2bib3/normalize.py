@@ -26,7 +26,7 @@ import xml.etree.ElementTree as ET
 
 import requests
 
-from ._bibtex import dump_entries, parse_entries
+from ._bibtex import dump_entries, parse_entries, split_name
 from .constants import USER_AGENT
 
 LATEX_DIACRITIC_COMMANDS = {
@@ -368,6 +368,29 @@ def encode_special_chars(value: str) -> str:
     return "".join(encoded)
 
 
+def protect_author_surnames(author_field: str) -> str:
+    """Wrap each author's complete surname in ``\\mbox{}``."""
+    protected_authors = []
+    for author in author_field.split(" and "):
+        author = re.sub(r"\s+", " ", author).strip()
+        if "," in author:
+            surname, remainder = author.split(",", 1)
+            protected_authors.append(f"\\mbox{{{surname.strip()}}},{remainder}")
+            continue
+
+        name = split_name(author)
+        surname = " ".join(name["von"] + name["last"])
+        surname_start = author.rfind(surname)
+        if surname and surname_start >= 0:
+            protected_authors.append(
+                f"{author[:surname_start]}\\mbox{{{surname}}}"
+                f"{author[surname_start + len(surname):]}"
+            )
+        else:
+            protected_authors.append(author)
+    return " and ".join(protected_authors)
+
+
 def _local_name(tag: str) -> str:
     if "}" in tag:
         return tag.rsplit("}", 1)[1]
@@ -679,5 +702,8 @@ def normalize_bibtex(
         for key in _TEXT_FIELDS_LATEX_ENCODING:
             if key in entry:
                 entry[key] = encode_special_chars(entry[key])
+
+        if "author" in entry:
+            entry["author"] = protect_author_surnames(entry["author"])
 
     return dump_entries(entries)
