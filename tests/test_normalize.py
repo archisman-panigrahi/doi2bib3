@@ -5,6 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from doi2bib3.bibitem import format_bibtex_to_aps_bibitem
 from doi2bib3.normalize import normalize_bibtex
 
 
@@ -31,6 +32,45 @@ def test_normalize_bibtex_handles_unbraced_month_macro():
     assert "@article{" in out
     assert "month = {July}" in out
     assert "journal = {Phys. Rev. B}" in out
+
+
+def test_normalize_bibtex_replaces_unicode_title_whitespace():
+    raw = """@article{Zhu_2003,
+ title={Two impurities in a d-wave superconductor:\u2003Local density of states},
+ author={Zhu, L. and Atkinson, W. A. and Hirschfeld, P. J.},
+ journal={Physical Review B},
+ year={2003},
+ volume={67},
+ pages={094508},
+ url={https://doi.org/10.1103/PhysRevB.67.094508}
+}
+"""
+
+    out = normalize_bibtex(raw)
+    bibitem = format_bibtex_to_aps_bibitem(out)
+
+    assert "superconductor: {Local} density of states" in out
+    assert "\u2003" not in out
+    assert "superconductor: Local density of states" in bibitem
+    assert "\u2003" not in bibitem
+
+
+def test_normalize_bibtex_replaces_em_dash_in_title():
+    raw = """@article{Example_2026,
+ title={A result\u2014with an em dash},
+ author={Example, A.},
+ journal={Example Journal},
+ year={2026}
+}
+"""
+
+    out = normalize_bibtex(raw)
+    bibitem = format_bibtex_to_aps_bibitem(out)
+
+    assert "result--with an em dash" in out
+    assert "\u2014" not in out
+    assert "result--with an em dash" in bibitem
+    assert "\u2014" not in bibitem
 
 
 @pytest.mark.parametrize(

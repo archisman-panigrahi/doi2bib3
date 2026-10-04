@@ -312,13 +312,15 @@ For each entry:
 - Escape title LaTeX-special characters `&`, `%`, and `#`, without
   double-escaping already escaped forms; HTML entities such as `&amp;` are
   decoded first.
-- Collapse ASCII whitespace runs in titles to a single space.
+- Collapse Unicode whitespace runs in titles to a single regular space.
+- Convert Unicode em dashes (`—`) in titles to `--`.
 - Protect capitalized words by wrapping with `{...}`.
 - Implemented by `mathml_to_latex()`, `html_italics_to_latex()`,
   `insert_dollars()`, `plus_minus_to_latex()`,
   `chemical_formulas_to_latex()`, `ensure_space_around_math()`,
-  `escape_latex_chars()`, `normalize_title_whitespace()`, and
-  `protect_capitalized_words()` called in `normalize_bibtex()`.
+  `escape_latex_chars()`, `normalize_title_whitespace()`,
+  `normalize_title_dashes()`, and `protect_capitalized_words()` called in
+  `normalize_bibtex()`.
 
 ### 6.1 Inline MathML title conversion
 

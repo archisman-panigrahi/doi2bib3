@@ -292,10 +292,14 @@ def html_scripts_to_latex(value: str) -> str:
 
 
 def normalize_title_whitespace(title: str) -> str:
-    if not re.search(r"[ \t\r\n\f\v]{2,}|[\t\r\n\f\v]", title):
+    if not re.search(r"\s", title):
         return title.strip()
 
-    return re.sub(r"[ \t\r\n\f\v]+", " ", title).strip()
+    return re.sub(r"\s+", " ", title).strip()
+
+
+def normalize_title_dashes(title: str) -> str:
+    return title.replace("\u2014", "--")
 
 
 def insert_dollars(title: str) -> str:
@@ -636,6 +640,7 @@ def normalize_bibtex(
 
         if "title" in entry:
             entry["title"] = unicodedata.normalize("NFC", entry["title"])
+            entry["title"] = normalize_title_dashes(entry["title"])
             entry["title"] = mathml_to_latex(entry["title"])
             entry["title"] = html_italics_to_latex(entry["title"])
             entry["title"] = html_scripts_to_latex(entry["title"])
