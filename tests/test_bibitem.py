@@ -23,7 +23,7 @@ def test_format_bibtex_to_aps_bibitem_uses_normalized_fields():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Englert_twenty-four_2008}\n"
-        "F. \\mbox{Englert}, K. \\mbox{Peeters}, and A. \\mbox{Taormina}, "
+        "F. Englert, K. Peeters, and A. Taormina, "
         "Twenty-four near-instabilities of Caspar-Klug viruses, "
         "\\href{https://doi.org/10.1103/PhysRevE.78.031908}"
         "{Phys. Rev. E \\textbf{78}, 031908 (2008)}.\n"
@@ -45,8 +45,8 @@ def test_format_bibtex_to_aps_bibitem_preserves_latex_first_initial():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Fischer_scanning_2007}\n"
-        "{\\O}. \\mbox{Fischer}, M. \\mbox{Kugler}, "
-        "I. \\mbox{Maggio-Aprile}, C. \\mbox{Berthod}, and C. \\mbox{Renner}, "
+        "{\\O}. Fischer, M. Kugler, "
+        "I. Maggio-Aprile, C. Berthod, and C. Renner, "
         "Scanning tunneling spectroscopy of high-temperature superconductors, "
         "\\href{https://doi.org/10.1103/RevModPhys.79.353}"
         "{Rev. Mod. Phys. \\textbf{79}, 353 (2007)}.\n"
@@ -63,7 +63,7 @@ def test_format_bibtex_to_aps_bibitem_allows_custom_key():
 
     assert format_bibtex_to_aps_bibitem(bib, key="custom") == (
         "\\bibitem{custom}\n"
-        "M. \\mbox{Aspelmeyer}, Measured measurement (2009).\n"
+        "M. Aspelmeyer, Measured measurement (2009).\n"
     )
 
 
@@ -80,7 +80,7 @@ def test_format_bibtex_to_aps_bibitem_shows_arxiv_eprint_for_unpublished():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Doe_2025}\n"
-        "J. \\mbox{Doe}, and J. \\mbox{Smith}, "
+        "J. Doe, and J. Smith, "
         "A preprint about something, "
         "\\href{https://arxiv.org/abs/2501.12345}{arXiv:2501.12345} (2025).\n"
     )
@@ -100,7 +100,7 @@ def test_format_bibtex_to_aps_bibitem_preserves_latex_math_command_arguments():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Zhang_evidence_2026}\n"
-        "H. \\mbox{Zhang}, Evidence of Chiral Fermion Edge Modes in "
+        "H. Zhang, Evidence of Chiral Fermion Edge Modes in "
         "$\\alpha\\text{-}{\\mathrm{RuCl}}_{3}$, "
         "\\href{https://doi.org/10.1103/rn48-7j6y}"
         "{Phys. Rev. Lett. \\textbf{136}, 226301 (2026)}.\n"
@@ -121,7 +121,7 @@ def test_format_bibtex_to_aps_bibitem_preserves_latex_italics_arguments():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Delbroek_effects_2026}\n"
-        "L. \\mbox{Delbroek}, Effects on \\textit{v} sin \\textit{i} determinations "
+        "L. Delbroek, Effects on \\textit{v} sin \\textit{i} determinations "
         "of O stars, "
         "\\href{https://doi.org/10.1051/0004-6361/202660102}"
         "{Astronomy \\& Astrophysics \\textbf{710}, L11 (2026)}.\n"
@@ -142,7 +142,7 @@ def test_format_bibtex_to_aps_bibitem_shows_first_page_for_aps_page_ranges():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Englert_2014}\n"
-        "B.-G. \\mbox{Englert}, An APS paper with a page range, "
+        "B.-G. Englert, An APS paper with a page range, "
         "Phys. Rev. A \\textbf{89}, 843 (2014).\n"
     )
 
@@ -161,7 +161,7 @@ def test_format_bibtex_to_aps_bibitem_keeps_non_aps_page_ranges():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Florencio_2015}\n"
-        "J. \\mbox{Florencio}, A non APS paper with a page range, "
+        "J. Florencio, A non APS paper with a page range, "
         "Example Journal \\textbf{10}, 53--59 (2015).\n"
     )
 
@@ -178,7 +178,7 @@ def test_format_bibtex_to_aps_bibitem_uses_thesis_school():
 
     assert format_bibtex_to_aps_bibitem(bib) == (
         "\\bibitem{Liao_investigation_2019}\n"
-        "W.-T. \\mbox{Liao}, Investigation of tunneling in superconductors, "
+        "W.-T. Liao, Investigation of tunneling in superconductors, "
         "University of Maryland, "
         "http://drum.lib.umd.edu/handle/1903/22117 (2019).\n"
     )

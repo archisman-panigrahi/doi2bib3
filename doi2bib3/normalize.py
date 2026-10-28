@@ -586,6 +586,7 @@ def normalize_bibtex(
     arxiv_id: Optional[str] = None,
     primary_class: Optional[str] = None,
     include_arxiv_fields: bool = False,
+    mbox: bool = False,
 ) -> str:
     # Some providers return month macros like month=july without defining
     # them, which makes bibtexparser raise UndefinedString.
@@ -703,7 +704,7 @@ def normalize_bibtex(
             if key in entry:
                 entry[key] = encode_special_chars(entry[key])
 
-        if "author" in entry:
+        if mbox and "author" in entry:
             entry["author"] = protect_author_surnames(entry["author"])
 
     return dump_entries(entries)

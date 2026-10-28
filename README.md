@@ -75,16 +75,18 @@ pip install -e .
 
 The CLI accepts a single positional identifier, an optional `-o/--out`
 path to save the BibTeX output, and `-b/--bibitem` to also print an
-APS/RevTeX-style `\bibitem`. When installed, the package installs a console
+APS/RevTeX-style `\bibitem`. Add `-m/--mbox` to wrap author surnames in
+`\mbox{}` and prevent line breaks in both outputs; wrapping is disabled by
+default. When installed, the package installs a console
 script named `doi2bib3` (configured in `pyproject.toml`). From the repository
 root you can run the local script wrapper at `scripts/doi2bib3`.
 
 ```bash
 # using the local wrapper script from repo root
-python scripts/doi2bib3 <identifier> [-o OUT] [--bibitem]
+python scripts/doi2bib3 <identifier> [-o OUT] [--bibitem] [--mbox]
 
 # or when installed as console script
-doi2bib3 <identifier> [-o OUT] [--bibitem]
+doi2bib3 <identifier> [-o OUT] [--bibitem] [--mbox]
 ```
 
 ## Examples
@@ -162,7 +164,9 @@ For other journals, the DOI link works, but the paper's URL would not work.
 
 The Python API exposes one primary function:
 
-- `doi2bib3.fetch_bibtex(identifier: str, timeout: int = 15) -> str`
+- `doi2bib3.fetch_bibtex(identifier: str, timeout: int = 15, mbox: bool = False) -> str`
+
+Set `mbox=True` to opt into surname wrapping in the Python API.
 
 Example:
 
@@ -176,8 +180,8 @@ print(bib)
 Additionally two convenience helpers are provided for APS/RevTeX-style
 `\bibitem` output:
 
-- `doi2bib3.format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str`
-- `doi2bib3.fetch_bibitem_aps(identifier: str, key: Optional[str] = None, timeout: int = 15) -> str`
+- `doi2bib3.format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None, mbox: bool = False) -> str`
+- `doi2bib3.fetch_bibitem_aps(identifier: str, key: Optional[str] = None, timeout: int = 15, mbox: bool = False) -> str`
 
 Examples:
 

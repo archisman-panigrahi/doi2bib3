@@ -45,11 +45,12 @@ def _initials(tokens: list[str]) -> str:
     return " ".join(initials)
 
 
-def _format_author(author: str) -> str:
-    """Format an author and prevent LaTeX from breaking the surname."""
+def _format_author(author: str, mbox: bool = False) -> str:
+    """Format an author, optionally preventing line breaks in the surname."""
     name = split_name(author)
     surname = " ".join(name["von"] + name["last"])
-    surname = f"\\mbox{{{surname}}}" if surname else ""
+    if mbox and surname:
+        surname = f"\\mbox{{{surname}}}"
     if name["jr"]:
         surname = f"{surname}, {' '.join(name['jr'])}"
     initials = _initials(name["first"])
@@ -58,9 +59,12 @@ def _format_author(author: str) -> str:
 
 def _remove_author_mboxes(author_field: str) -> str:
     """Remove the outer word-protection commands before parsing BibTeX names."""
+    marker = "\\mbox{"
+    if marker not in author_field:
+        return author_field
+
     result = []
     index = 0
-    marker = "\\mbox{"
     while index < len(author_field):
         if not author_field.startswith(marker, index):
             result.append(author_field[index])
@@ -85,7 +89,7 @@ def _remove_author_mboxes(author_field: str) -> str:
     return "".join(result)
 
 
-def _format_authors_initials(author_field: str) -> str:
+def _format_authors_initials(author_field: str, mbox: bool = False) -> str:
     """Convert BibTeX author list into "F. M. Lastname" style.
 
     Handles both "First Middle Last" and "Last, First Middle" forms.
@@ -93,7 +97,7 @@ def _format_authors_initials(author_field: str) -> str:
     if not author_field:
         return ""
     author_field = _remove_author_mboxes(author_field)
-    out = [_format_author(author) for author in author_field.split(" and ")]
+    out = [_format_author(author, mbox=mbox) for author in author_field.split(" and ")]
     out = [author for author in out if author]
 
     if len(out) <= 1:
@@ -141,7 +145,9 @@ def _aps_bibitem_pages(entry: dict[str, str], doi: Optional[str]) -> str:
     return match.group(1) if match else pages
 
 
-def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> str:
+def format_bibtex_to_aps_bibitem(
+    bibtex_str: str, key: Optional[str] = None, mbox: bool = False
+) -> str:
     """Format a normalized/formatted BibTeX string into an APS \bibitem.
 
     Accepts a BibTeX string (ideally normalized by `fetch_bibtex`/`normalize_bibtex`)
@@ -157,7 +163,7 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     entry = entries[0]
     bibkey = key or entry.get("ID") or entry.get("id") or "entry"
 
-    authors = _format_authors_initials(entry.get("author", ""))
+    authors = _format_authors_initials(entry.get("author", ""), mbox=mbox)
     title = _remove_protective_braces(entry.get("title", ""))
 
     eprint = entry.get("eprint", "")
@@ -210,10 +216,12 @@ def format_bibtex_to_aps_bibitem(bibtex_str: str, key: Optional[str] = None) -> 
     return f"\\bibitem{{{bibkey}}}\n{output}\n"
 
 
-def fetch_bibitem_aps(identifier: str, key: Optional[str] = None, timeout: int = 15) -> str:
+def fetch_bibitem_aps(
+    identifier: str, key: Optional[str] = None, timeout: int = 15, mbox: bool = False
+) -> str:
     """Resolve identifier and return an APS/RevTeX \bibitem block.
 
     Reuses `fetch_bibtex` to avoid duplicating network/normalization logic.
     """
-    bibtex = fetch_bibtex(identifier, timeout=timeout)
-    return format_bibtex_to_aps_bibitem(bibtex, key=key)
+    bibtex = fetch_bibtex(identifier, timeout=timeout, mbox=mbox)
+    return format_bibtex_to_aps_bibitem(bibtex, key=key, mbox=mbox)

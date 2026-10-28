@@ -625,18 +625,18 @@ def _fetch_bibtex_for_doi(doi: str, timeout: int = 15) -> str:
     )
 
 
-def fetch_bibtex(identifier: str, timeout: int = 15) -> str:
+def fetch_bibtex(identifier: str, timeout: int = 15, mbox: bool = False) -> str:
     """Public API: resolve identifier and return normalized BibTeX."""
     if _dspace_item_api_url(identifier) or _is_handle_url(identifier):
         dspace_api_url = _resolve_dspace_api_url(identifier, timeout)
         metadata = _fetch_dspace_metadata(identifier, timeout, dspace_api_url)
         thesis_bibtex = _dspace_thesis_bibtex(metadata, identifier)
         if thesis_bibtex is not None:
-            return normalize_bibtex(thesis_bibtex)
+            return normalize_bibtex(thesis_bibtex, mbox=mbox)
         doi = _dspace_item_doi(metadata)
         if not doi:
             raise DOIError(f"No thesis degree or DOI found in DSpace item: {identifier}")
-        return normalize_bibtex(_fetch_bibtex_for_doi(doi, timeout))
+        return normalize_bibtex(_fetch_bibtex_for_doi(doi, timeout), mbox=mbox)
 
     doi, arxiv_metadata = _resolve_identifier(identifier, timeout=timeout)
     raw = _fetch_bibtex_for_doi(doi, timeout=timeout)
@@ -651,6 +651,7 @@ def fetch_bibtex(identifier: str, timeout: int = 15) -> str:
                 arxiv_metadata.primary_class if include_arxiv_fields else None
             ),
             include_arxiv_fields=include_arxiv_fields,
+            mbox=mbox,
         )
     except Exception:
         return raw

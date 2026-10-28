@@ -153,7 +153,7 @@ def test_normalize_bibtex_encodes_real_accented_article_metadata():
     out = normalize_bibtex(raw)
 
     assert "@article{Florencio_enmeshed_2015," in out
-    assert "author = {\\mbox{Flor\\^{e}ncio}, Jo\\~{a}o}" in out
+    assert "author = {Flor\\^{e}ncio, Jo\\~{a}o}" in out
     assert "{Caf\\'{e}} {M\\\"{u}ller}" in out
 
 
@@ -182,11 +182,11 @@ def test_normalize_bibtex_protects_only_surnames_and_normalizes_thin_spaces():
 }
 """
 
-    out = normalize_bibtex(raw)
+    out = normalize_bibtex(raw, mbox=True)
 
     assert r"author = {\mbox{M\'{e}asson}, M.-A. and " in out
     assert r"\mbox{Zhong}, R. D. and \mbox{Gu}, G. D.}" in out
-    bibitem = format_bibtex_to_aps_bibitem(out)
+    bibitem = format_bibtex_to_aps_bibitem(out, mbox=True)
     assert r"M.-A. \mbox{M\'{e}asson}" in bibitem
     assert "R. D. \\mbox{Zhong}" in bibitem
     assert r"\mbox{\mbox" not in bibitem
@@ -567,7 +567,7 @@ def test_normalize_bibtex_leaves_non_thesis_publisher_untouched():
 }
 """,
             "Englert_nobel_2014",
-            ["\\mbox{Englert}, Fran\\c{c}ois"],
+            ["Englert, Fran\\c{c}ois"],
             ["{Nobel}", "{BEH}"],
         ),
         (
@@ -586,7 +586,7 @@ def test_normalize_bibtex_leaves_non_thesis_publisher_untouched():
 }
 """,
             "Englert_twenty-four_2008",
-            ["Fran\\c{c}ois \\mbox{Englert}"],
+            ["Fran\\c{c}ois Englert"],
             ["{Twenty-four}", "{Caspar-Klug}"],
         ),
         (
@@ -605,7 +605,7 @@ def test_normalize_bibtex_leaves_non_thesis_publisher_untouched():
 }
 """,
             "Taie_observation_2022",
-            ["\\mbox{Ibarra-Garc\\'{i}a-Padilla}, Eduardo"],
+            ["Ibarra-Garc\\'{i}a-Padilla, Eduardo"],
             ["{SU}({N})", "{Hubbard}"],
         ),
         (
@@ -625,8 +625,8 @@ def test_normalize_bibtex_leaves_non_thesis_publisher_untouched():
 """,
             "Sprau_discovery_2017",
             [
-                "\\mbox{B\\\"{o}hmer}, A. E.",
-                "\\mbox{Davis}, J. C. S\\'{e}amus",
+                "B\\\"{o}hmer, A. E.",
+                "Davis, J. C. S\\'{e}amus",
             ],
             ["{Discovery}", "{Cooper}", "{FeSe}"],
         ),
