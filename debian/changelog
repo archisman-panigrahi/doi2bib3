@@ -1,3 +1,9 @@
+python-doi2bib3 (1.8.1-1) unstable; urgency=medium
+
+  * overwrite bibtex output instead of appending to stale file
+
+ -- Archisman Panigrahi <apandada1@gmail.com>  Tue, 10 Nov 2026 09:02:20 -0500
+
 python-doi2bib3 (1.8.0-1) unstable; urgency=medium
 
   * batch output and fix ACS links
