@@ -83,6 +83,7 @@ def main(argv=None):
         return 2
 
     status = 0
+    wrote_output = False
     for identifier in identifiers:
         try:
             bib = fetch_bibtex(identifier, mbox=args.mbox)
@@ -92,7 +93,10 @@ def main(argv=None):
             continue
 
         if args.out:
-            save_bibtex_to_file(bib, args.out, append=True)
+            # Write the first successful result fresh so a previous run's
+            # output is not kept; only append further results of this run.
+            save_bibtex_to_file(bib, args.out, append=wrote_output)
+            wrote_output = True
             print("Wrote", args.out)
         else:
             print(bib)
