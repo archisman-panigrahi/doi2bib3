@@ -48,3 +48,23 @@ def test_mbox_is_opt_in_for_bibtex_and_bibitem(
         assert r"\mbox" not in bibitem
         assert "author = {de la Cruz, Jane and Smith, John}" in bibtex
         assert "J. de la Cruz, and J. Smith" in bibitem
+
+
+
+def test_batch_input_file(monkeypatch, capsys, tmp_path):
+    cli = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/doi2bib3"))
+
+    def fake_fetch(identifier, mbox=False):
+        if identifier == "bad":
+            raise ValueError("not found")
+        return f"@article{{{identifier},\n title={{T}}\n}}"
+
+    monkeypatch.setitem(cli["main"].__globals__, "fetch_bibtex", fake_fetch)
+    input_path = tmp_path / "dois.txt"
+    input_path.write_text("# refs\na\n\n bad \nb\n")
+    output_path = tmp_path / "refs.bib"
+
+    assert cli["main"](["--input", str(input_path), "--output", str(output_path)]) == 1
+    bib = output_path.read_text()
+    assert "@article{a," in bib and "@article{b," in bib and bib.count("@article") == 2
+    assert "Error (bad): not found" in capsys.readouterr().err

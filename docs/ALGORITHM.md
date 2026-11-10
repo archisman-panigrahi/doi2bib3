@@ -20,16 +20,21 @@ Given user input:
 
 1. Parse args:
 - positional `identifier`
-- optional `-o/--out`
+- optional `-i/--input` (text file, one identifier per line)
+- optional `-o/--out` (alias `--output`)
 - optional `-b/--bibitem`
 - Implemented by `build_parser()` and `argparse` wiring in `main()` (`scripts/doi2bib3`)
 
-2. If `identifier` is missing:
-- print help
-- exit code 2
+2. Build the identifier list:
+- if both `identifier` and `-i/--input` are given, exit with an argparse error (code 2)
+- with `-i/--input`, read the file and keep each stripped line that is not
+  blank and does not start with `#`; if the file cannot be read, print
+  `Error: <message>` to stderr and exit code 1
+- otherwise use `[identifier]`
+- if neither is given, print help and exit code 2
 - Implemented by `main()` (`scripts/doi2bib3`)
 
-3. Call `fetch_bibtex(identifier)`.
+3. For each identifier, call `fetch_bibtex(identifier)` and run steps 4-6.
 - Implemented by `main()` calling `fetch_bibtex()` (`scripts/doi2bib3` -> `doi2bib3/backend.py`)
 
 4. If `-o/--out` is set:
@@ -50,7 +55,9 @@ Given user input:
 - the `\bibitem` is not written to `-o/--out`
 - Implemented by `format_bibtex_to_aps_bibitem()` in `doi2bib3/bibitem.py`, called from `main()`
 
-If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr and exits code 1.
+If `fetch_bibtex()` raises, CLI prints `Error: <message>` to stderr
+(`Error (<identifier>): <message>` with `-i/--input`), skips that identifier,
+continues with the rest, and exits code 1 at the end.
 - Implemented by the fetch `try/except` in `main()` (`scripts/doi2bib3`)
 
 ## 3. Core API flow (`fetch_bibtex`)

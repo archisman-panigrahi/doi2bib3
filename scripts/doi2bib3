@@ -44,7 +44,10 @@ def build_parser():
         nargs="?",
         help="DOI, DOI URL, arXiv id/URL, or publisher URL",
     )
-    p.add_argument("-o", "--out", help="Write .bib file to this path")
+    p.add_argument(
+        "-i", "--input", help="Text file with one identifier per line ('#' comments allowed)"
+    )
+    p.add_argument("-o", "--out", "--output", help="Write .bib file to this path")
     p.add_argument(
         "-b",
         "--bibitem",
@@ -64,29 +67,43 @@ def main(argv=None):
     """Run CLI: resolve identifier, fetch normalized BibTeX, output or save."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not args.identifier:
+    if args.identifier and args.input:
+        parser.error("use either an identifier or --input, not both")
+    if args.input:
+        try:
+            with open(args.input, encoding="utf-8") as fh:
+                identifiers = [s for s in map(str.strip, fh) if s and not s.startswith("#")]
+        except OSError as e:
+            print("Error:", e, file=sys.stderr)
+            return 1
+    elif args.identifier:
+        identifiers = [args.identifier]
+    else:
         parser.print_help()
         return 2
 
-    try:
-        bib = fetch_bibtex(args.identifier, mbox=args.mbox)
-    except Exception as e:
-        print("Error:", e, file=sys.stderr)
-        return 1
-
-    if args.out:
-        save_bibtex_to_file(bib, args.out, append=True)
-        print("Wrote", args.out)
-    else:
-        print(bib)
-
-    if args.bibitem:
+    status = 0
+    for identifier in identifiers:
         try:
-            print(format_bibtex_to_aps_bibitem(bib, mbox=args.mbox))
+            bib = fetch_bibtex(identifier, mbox=args.mbox)
         except Exception as e:
-            print("Warning: failed to format bibitem:", e, file=sys.stderr)
+            print(f"Error ({identifier}):" if args.input else "Error:", e, file=sys.stderr)
+            status = 1
+            continue
 
-    return 0
+        if args.out:
+            save_bibtex_to_file(bib, args.out, append=True)
+            print("Wrote", args.out)
+        else:
+            print(bib)
+
+        if args.bibitem:
+            try:
+                print(format_bibtex_to_aps_bibitem(bib, mbox=args.mbox))
+            except Exception as e:
+                print("Warning: failed to format bibitem:", e, file=sys.stderr)
+
+    return status
 
 
 if __name__ == '__main__':

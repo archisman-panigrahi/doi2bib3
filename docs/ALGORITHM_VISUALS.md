@@ -7,7 +7,7 @@ Simple visual diagrams for `docs/ALGORITHM.md`.
 ```mermaid
 flowchart TD
     A[Input identifier] --> B{CLI or Python API?}
-    B -->|CLI| C[scripts/doi2bib3::main]
+    B -->|CLI| C[scripts/doi2bib3::main<br/>one identifier, or each line of -i file]
     B -->|API| D[doi2bib3.fetch_bibtex]
     C --> D
     D --> P{DSpace entity or Handle URL?}

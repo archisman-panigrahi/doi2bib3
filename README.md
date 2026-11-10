@@ -73,7 +73,8 @@ pip install -e .
 
 ## CLI usage
 
-The CLI accepts a single positional identifier, an optional `-o/--out`
+The CLI accepts a single positional identifier (or `-i/--input` with a text
+file of identifiers, one per line), an optional `-o/--out` (alias `--output`)
 path to save the BibTeX output, and `-b/--bibitem` to also print an
 APS/RevTeX-style `\bibitem`. Add `-m/--mbox` to wrap author surnames in
 `\mbox{}` and prevent line breaks in both outputs; wrapping is disabled by
@@ -87,6 +88,7 @@ python scripts/doi2bib3 <identifier> [-o OUT] [--bibitem] [--mbox]
 
 # or when installed as console script
 doi2bib3 <identifier> [-o OUT] [--bibitem] [--mbox]
+doi2bib3 -i IDENTIFIERS.txt [-o OUT] [--bibitem] [--mbox]
 ```
 
 ## Examples
@@ -134,6 +136,16 @@ doi2bib3 https://doi.org/10.1038/nphys1170 -o paper.bib
 ```
 
 This appends the BibTeX entry to `paper.bib` and prints `Wrote paper.bib`.
+
+Batch mode: read identifiers from a text file, one per line (blank lines and
+lines starting with `#` are ignored):
+
+```bash
+doi2bib3 --input file_with_dois.txt --output refs.bib
+```
+
+Failed identifiers are reported and skipped, and the exit code is 1 if any
+failed.
 
 Print BibTeX and an APS/RevTeX-style `\bibitem` without saving to a file:
 
