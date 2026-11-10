@@ -51,6 +51,24 @@ def test_mbox_is_opt_in_for_bibtex_and_bibitem(
 
 
 
+def test_output_file_is_written_fresh_not_appended(monkeypatch, capsys, tmp_path):
+    cli = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/doi2bib3"))
+
+    def fake_fetch(identifier, mbox=False):
+        return f"@article{{{identifier},\n title={{T}}\n}}"
+
+    monkeypatch.setitem(cli["main"].__globals__, "fetch_bibtex", fake_fetch)
+    input_path = tmp_path / "dois.txt"
+    input_path.write_text("a\n")
+    output_path = tmp_path / "refs.bib"
+    output_path.write_text("STALE\n")
+
+    assert cli["main"](["--input", str(input_path), "--output", str(output_path)]) == 0
+    bib = output_path.read_text()
+    assert "STALE" not in bib
+    assert bib.count("@article") == 1
+
+
 def test_batch_input_file(monkeypatch, capsys, tmp_path):
     cli = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/doi2bib3"))
 
