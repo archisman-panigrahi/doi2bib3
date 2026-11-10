@@ -243,3 +243,50 @@ def test_scipost_pdf_url_fetches_bibtex_for_resolved_doi(monkeypatch):
     assert f"https://doi.org/{doi}" in bibtex
     assert f"https://doi.org/{doi}" in called_urls
     assert f"https://doi.org/{doi}/pdf" not in called_urls
+
+
+
+@pytest.mark.imported
+def test_silverchair_doi_url_strips_article_id_and_slug():
+    article_url = (
+        "https://pubs.acs.org/aaemdr/article/doi/10.1021/acsaenm.6c01242/5462202/"
+        "Non-Monotonic-Dependence-of-Ion-Selectivity-on?searchresult=1"
+    )
+    assert backend._resolve_identifier_to_doi(article_url) == "10.1021/acsaenm.6c01242"
+
+
+ACS_URL = "https://pubs.acs.org/ancac3/article/20/31/21625/5235815"
+ACS_CROSSREF_URL = (
+    "https://api.crossref.org/works?filter=prefix:10.1021"
+    "&query.bibliographic=20%2031%2021625&rows=20&select=DOI,volume,issue,page"
+)
+
+
+@pytest.mark.imported
+@pytest.mark.parametrize(
+    "items, expected",
+    [
+        (
+            [
+                {"DOI": "10.1021/acsnano.6c01072", "volume": "20", "issue": "31",
+                 "page": "21625-21635"},
+                {"DOI": "10.1021/acs.iecr.9b04447", "volume": "58", "issue": "47",
+                 "page": "21625-21640"},
+            ],
+            "10.1021/acsnano.6c01072",
+        ),
+        ([], None),
+    ],
+)
+def test_acs_volume_page_url_resolves_via_crossref(monkeypatch, items, expected):
+    called_urls = []
+    response = FakeResponse()
+    response.json = lambda: {"message": {"items": items}}
+    _install_fake_get(monkeypatch, {ACS_CROSSREF_URL: response}, called_urls)
+
+    if expected:
+        assert backend._resolve_identifier_to_doi(ACS_URL) == expected
+    else:
+        with pytest.raises(backend.DOIError):
+            backend._resolve_identifier_to_doi(ACS_URL)
+    assert called_urls == [ACS_CROSSREF_URL]

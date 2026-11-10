@@ -404,6 +404,11 @@ def _doi_candidates_from_url_path(url: str) -> list[str]:
         if re.match(r"^SciPost[A-Za-z0-9.:-]+$", scipost_path):
             return [f"10.21468/{scipost_path}"]
 
+    # Silverchair (AIP, ACS): /article/doi/<doi>/<numeric id>/<title slug>
+    m = re.search(r"/article/doi/(10\.\d{4,9}/[^/]+)/\d+(?:/|$)", path)
+    if m:
+        return [m.group(1)]
+
     m = DOI_IN_TEXT_PATTERN.search(path)
     return [m.group(0)] if m else []
 
@@ -472,6 +477,41 @@ def _aip_minimal_article_url(url: str) -> Optional[str]:
     return f"https://aipp.silverchair-cdn.com/article-minimal/{match.group(1)}"
 
 
+def _acs_volume_issue_page(url: str) -> Optional[tuple[str, ...]]:
+    """Return (volume, issue, first page) from a pubs.acs.org article URL."""
+    parsed = urlparse(url)
+    if parsed.netloc.lower() != "pubs.acs.org":
+        return None
+    match = re.match(r"^/[^/]+/article/(\d+)/(\d+)/(\w+)/\d+(?:/|$)", parsed.path)
+    return match.groups() if match else None
+
+
+def _extract_doi_from_acs_url(
+    vip: tuple[str, ...], timeout: int = 10
+) -> Optional[str]:
+    """Find the unique ACS DOI on Crossref matching volume, issue and first page.
+
+    ACS pages reject non-browser clients, so they cannot be scraped.
+    """
+    volume, issue, page = vip
+    url = (
+        "https://api.crossref.org/works?filter=prefix:10.1021"
+        f"&query.bibliographic={quote(' '.join(vip))}&rows=20&select=DOI,volume,issue,page"
+    )
+    try:
+        resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout)
+        items = resp.json()["message"]["items"] if resp.status_code == 200 else []
+    except Exception:
+        return None
+    dois = {
+        item["DOI"].lower()
+        for item in items
+        if (item.get("volume"), item.get("issue")) == (volume, issue)
+        and (item.get("page") or "").split("-")[0] == page
+    }
+    return dois.pop() if len(dois) == 1 else None
+
+
 def _fetch_html_for_doi_extraction(url: str, timeout: int = 10) -> Optional[str]:
     ua_browser = (
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -511,6 +551,10 @@ def _extract_doi_from_publisher_url(url: str, timeout: int = 10) -> Optional[str
         html = _fetch_html_for_doi_extraction(aip_url, timeout=timeout)
         return _first_valid_doi(_doi_candidates_from_html(html or ""))
 
+    acs_vip = _acs_volume_issue_page(url)
+    if acs_vip:
+        return _extract_doi_from_acs_url(acs_vip, timeout=timeout)
+
     doi = _extract_doi_from_sciencedirect_url(url, timeout=timeout)
     if doi:
         return doi
@@ -532,7 +576,7 @@ def _search_doi_via_crossref(query: str, timeout: int = 15) -> Optional[str]:
         doi = _extract_doi_from_publisher_url(q, timeout=timeout)
         if doi:
             return doi
-        if _aip_minimal_article_url(q):
+        if _aip_minimal_article_url(q) or _acs_volume_issue_page(q):
             return None
 
     try:
